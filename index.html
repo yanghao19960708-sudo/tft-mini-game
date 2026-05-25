@@ -1,0 +1,3731 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>口袋战棋 · 金铲铲风</title>
+    <style>
+:root {
+    /* 二次元星空/全息UI主色调 */
+    --bg-deep: #0b0d17;
+    --bg-mid: #151828;
+    --bg-up: rgba(35, 40, 70, 0.7);
+    
+    /* 核心面板：高透明毛玻璃材质 */
+    --panel: rgba(20, 25, 45, 0.55);
+    --panel-light: rgba(45, 55, 90, 0.65);
+    --border-soft: rgba(255, 255, 255, 0.15);
+    --border-mid: rgba(255, 255, 255, 0.3);
+
+    /* 二次元高亮强调色 */
+    --gold: #f1c40f;
+    --gold-bright: #fff282;
+    --gold-deep: #d4ac0d;
+    --cyan: #00e5ff;
+    --cyan-deep: #008eb5;
+    --pink: #ff477e;      /* 新增：二次元标志性霓虹粉 */
+    --purple-light: #b388ff; /* 新增：柔和亮紫 */
+    
+    --red: #ff4d4f;
+    --green: #00e676;
+
+    --text: #ffffff;
+    --text-mid: #b2bec3;
+    --text-dim: #636e72;
+
+    /* 费用边框 (变得更亮更荧光) */
+    --c1: #a4b0be;
+    --c2: #2ed573;
+    --c3: #1e90ff;
+    --c4: #ff477e; /* 4费改为显眼的粉色 */
+    --c5: #ffa502;
+    --c6: #ff5ce1;
+
+    /* 属性色 */
+    --fire: #ff6b81;
+    --water: #70a1ff;
+    --grass: #7bed9f;
+    --electric: #eccc68;
+    --ghost: #a55eea;
+    --dragon: #ffa502;
+    --fighting: #ff7f50;
+    --psychic: #ff9ff3;
+    --normal: #dfe4ea;
+    --ice: #7efff5;
+    --psychic: #ff9ff3;
+    --fairy: #ffb8e8;
+    --steel: #b8c6db;
+    --wind: #7bed9f;
+    --light: #ffeaa7;
+    --shadow: #7d5fff;
+    --summoner: #81ecec;
+    --guardian: #74b9ff;
+    --dancer: #fab1d0;
+    --ranger: #55efc4;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap');
+
+* { box-sizing: border-box; }
+
+body, html {
+    margin: 0; padding: 0; width: 100vw; height: 100vh;
+    font-family: 'Rajdhani', "Microsoft YaHei", -apple-system, sans-serif;
+    background: #fff1fb; color: var(--text);
+    user-select: none; overflow: hidden;
+    font-weight: 600; letter-spacing: 0.5px;
+}
+
+/* ========= 容器 & 二次元网格背景 ========= */
+#app {
+    position: relative; width: 100%; height: 100%;
+    background:
+        radial-gradient(circle at 20% 18%, rgba(255,255,255,0.95) 0 0.6%, transparent 0.7%),
+        radial-gradient(circle at 78% 22%, rgba(255,255,255,0.85) 0 0.45%, transparent 0.55%),
+        radial-gradient(circle at 14% 76%, rgba(255,255,255,0.75) 0 0.5%, transparent 0.6%),
+        linear-gradient(135deg, rgba(255, 190, 221, 0.78), rgba(165, 229, 255, 0.72) 42%, rgba(255, 244, 174, 0.65)),
+        linear-gradient(180deg, #fff7ff 0%, #d9f5ff 45%, #fff0f8 100%);
+    background-size: 280px 280px, 360px 360px, 320px 320px, cover, cover;
+    color: #fff;
+}
+#app::before {
+    content: ''; position: absolute; inset: 0;
+    background:
+        radial-gradient(circle at 50% 35%, rgba(255,255,255,0.34), transparent 26%),
+        repeating-linear-gradient(90deg, rgba(255,255,255,0.22) 0 1px, transparent 1px 46px),
+        repeating-linear-gradient(0deg, rgba(255,255,255,0.18) 0 1px, transparent 1px 46px);
+    pointer-events: none; z-index: 0;
+}
+#app::after {
+    content: ''; position: absolute; inset: 0;
+    background:
+        radial-gradient(circle at 50% 112%, rgba(255, 71, 126, 0.22), transparent 30%),
+        linear-gradient(180deg, rgba(70, 32, 92, 0.05), rgba(34, 28, 74, 0.20));
+    pointer-events: none; z-index: 0;
+}
+
+/* ========= 顶部信息栏 ========= */
+.ui-top {
+    position: absolute; top: 0; left: 0; width: 100%;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding: 16px 24px; z-index: 30; pointer-events: none;
+}
+.player-card {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--panel); backdrop-filter: blur(12px);
+    border: 1px solid rgba(0, 229, 255, 0.3);
+    padding: 10px 20px 10px 10px; border-radius: 50px; /* 全圆角 */
+    pointer-events: auto; box-shadow: 0 4px 20px rgba(0, 229, 255, 0.15);
+}
+.player-avatar {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--cyan), var(--purple-light));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; border: 2px solid #fff; box-shadow: 0 0 10px var(--cyan);
+}
+.player-info { display: flex; flex-direction: column; gap: 2px; }
+.player-name { font-size: 12px; color: var(--cyan); font-weight: 800; letter-spacing: 1px; }
+.hp-row { display: flex; align-items: center; gap: 6px; font-size: 18px; font-weight: 800; }
+.hp-row .heart { color: var(--pink); font-size: 16px; filter: drop-shadow(0 0 6px var(--pink)); }
+
+.stage-pill {
+    display: flex; flex-direction: column; align-items: center;
+    background: var(--panel); backdrop-filter: blur(12px);
+    border: 1px solid var(--border-soft); border-top: none;
+    border-radius: 0 0 20px 20px; padding: 10px 40px;
+    pointer-events: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+.stage-label { font-size: 11px; color: var(--purple-light); font-weight: 800; letter-spacing: 4px; }
+.stage-value { font-size: 24px; color: #fff; font-weight: 800; line-height: 1; margin-top: 4px; text-shadow: 0 0 10px var(--cyan);}
+.round-timer { width: 100%; height: 4px; background: rgba(0,0,0,0.5); border-radius: 2px; margin-top: 8px; overflow: hidden;}
+.round-timer-fill { height: 100%; background: linear-gradient(90deg, var(--cyan), var(--pink)); transition: width 0.3s; width: 100%;}
+
+.top-actions { display: flex; gap: 10px; pointer-events: auto; }
+.icon-btn {
+    background: var(--panel); backdrop-filter: blur(8px);
+    border: 1px solid var(--border-soft); color: var(--text); 
+    padding: 10px 16px; border-radius: 12px; cursor: pointer; 
+    font-weight: 800; font-size: 14px; display: flex; align-items: center; gap: 6px;
+    transition: all 0.2s;
+}
+.icon-btn:hover { background: rgba(255,255,255,0.1); transform: translateY(-2px); }
+.icon-btn.speed { color: var(--cyan); border-color: rgba(0, 229, 255, 0.4); }
+.icon-btn.streak { color: var(--gold-bright); border-color: rgba(241, 196, 15, 0.4); }
+
+/* ========= 战场 (科技感拟物) ========= */
+.battle-area {
+    position: absolute; top: 90px; left: 0; right: 0; bottom: 260px;
+    display: flex; align-items: center; justify-content: center; z-index: 5;
+}
+.board-stack { display: flex; flex-direction: column; gap: 8px; padding: 10px; }
+.hex-row { display: flex; gap: 10px; justify-content: center; }
+.hex-row.offset { margin-left: 55px; }
+
+.hex-slot {
+    width: 100px; height: 115px; position: relative; cursor: default;
+    filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.18));
+}
+.hex-slot::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(0,229,255,0.08)); backdrop-filter: blur(4px);
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+}
+.hex-slot::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(90deg, rgba(0,229,255,0.82), rgba(255,255,255,0.72), rgba(0,229,255,0.82));
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    opacity: 0.72; padding: 2px;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    pointer-events: none; transition: all 0.2s;
+}
+.hex-slot.enemy-row::after { background: linear-gradient(90deg, rgba(255,71,126,0.72), rgba(255,255,255,0.58), rgba(255,71,126,0.72)); }
+.hex-slot:hover::after { opacity: 1; filter: drop-shadow(0 0 10px var(--cyan)); }
+.hex-slot.drag-over::before { background: rgba(255, 71, 126, 0.16); }
+.hex-slot.drag-over::after { opacity: 1; background: linear-gradient(90deg, var(--pink), #fff, var(--pink)); }
+.hex-slot.hit-flash::before { animation: hitFlash 0.34s ease-out; }
+.hex-slot.casting::after { animation: castRing 0.55s ease-out; }
+
+.field-divider {
+    height: 3px; width: 100%; margin: 8px 0;
+    background: linear-gradient(90deg, transparent, var(--cyan-deep), var(--cyan), var(--cyan-deep), transparent);
+    box-shadow: 0 0 20px var(--cyan); opacity: 0.7;
+}
+
+/* ========= 宠物可视化增强 ========= */
+.champion {
+    position: absolute; inset: 0; display: flex; flex-direction: column; 
+    align-items: center; justify-content: flex-end; pointer-events: none; z-index: 10;
+}
+.champion.draggable { pointer-events: all; cursor: grab; }
+.champion.draggable:active { cursor: grabbing; }
+
+/* 底部发光光环 (根据稀有度变色) */
+.champion::before {
+    content: ''; position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%) rotateX(60deg);
+    width: 60px; height: 60px; border-radius: 50%;
+    background: radial-gradient(circle, var(--unit-color, rgba(255,255,255,0.2)) 0%, transparent 60%);
+    opacity: 0.6; pointer-events: none; z-index: -1;
+}
+
+.champion-img-wrap {
+    width: 86px; height: 86px; display: flex; align-items: flex-end; justify-content: center;
+    position: relative; margin-bottom: 12px;
+}
+.champion img {
+    width: 86px; height: 86px; image-rendering: pixelated;
+    filter: drop-shadow(0 8px 6px rgba(0,0,0,0.6)); transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.champion.draggable:hover img { transform: translateY(-6px) scale(1.1); }
+
+/* 身价标签 (新增核心可视化) */
+.cost-badge {
+    position: absolute; top: 0px; right: -15px;
+    background: rgba(15, 20, 35, 0.85); backdrop-filter: blur(4px);
+    border: 1px solid currentColor; border-radius: 12px;
+    padding: 2px 6px; font-size: 11px; font-weight: 800;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5); z-index: 20;
+}
+
+.champion .stars {
+    position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 2px; z-index: 5; font-size: 14px; font-weight: 900;
+    text-shadow: 0 2px 4px #000, 0 0 6px currentColor;
+}
+.champion .stars.s1 { color: #d1ccc0; }
+.champion .stars.s2 { color: #2ed573; }
+.champion .stars.s3 { color: var(--cyan); }
+.champion .stars.s4 { color: var(--pink); animation: starPulse 1s infinite; }
+.champion .stars.s5 { color: var(--gold); animation: starPulse 0.7s infinite; }
+
+.champion .hp-bar {
+    position: absolute; top: 4px; left: 50%; transform: translateX(-50%);
+    width: 64px; height: 6px; background: rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 4px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.8); z-index: 6;
+}
+.champion .hp-fill { height: 100%; background: linear-gradient(90deg, #00e676, #b9fbc0); transition: width 0.3s; }
+.champion.enemy .hp-fill { background: linear-gradient(90deg, #ff4757, #ff9f43); }
+.champion .mana-bar {
+    position: absolute; top: 11px; left: 50%; transform: translateX(-50%);
+    width: 64px; height: 3px; background: rgba(0,0,0,0.6); border-radius: 2px; overflow: hidden; z-index: 6;
+}
+.champion .mana-fill { height: 100%; background: linear-gradient(90deg, #00d2ff, #3a7bd5); transition: width 0.2s; }
+
+.champion .items {
+    position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 3px; z-index: 5;
+}
+.champion .item-mini {
+    width: 18px; height: 18px; background: #1a1a24; border: 1px solid var(--cyan);
+    border-radius: 4px; display: flex; align-items: center; justify-content: center;
+    font-size: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.8);
+}
+
+/* ========= 侧边面板 (拟物重塑) ========= */
+.ui-left, .ui-right {
+    position: absolute; top: 100px; bottom: 260px; width: 220px; /* 侧边栏变宽 */
+    display: flex; flex-direction: column; z-index: 15;
+}
+.ui-left { left: 24px; }
+.ui-right { right: 24px; gap: 16px; } /* 间距变大 */
+
+.side-panel {
+    background: var(--panel); backdrop-filter: blur(16px);
+    border: 1px solid var(--border-soft); border-radius: 16px; /* 大圆角 */
+    display: flex; flex-direction: column; overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.equipment-panel {
+    height: auto !important;
+    flex: 0 0 auto;
+}
+
+.panel-header {
+    padding: 12px; font-size: 13px; font-weight: 800; color: #fff;
+    letter-spacing: 2px; border-bottom: 1px solid rgba(255,255,255,0.1);
+    background: linear-gradient(90deg, rgba(255,255,255,0.1), transparent);
+    display: flex; align-items: center; gap: 8px;
+}
+.panel-header::before { content: ''; width: 4px; height: 14px; background: var(--cyan); border-radius: 2px;}
+
+/* 装备库放大 */
+.inventory-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; padding: 12px; min-height: 0; }
+.item-slot {
+    aspect-ratio: 1; background: rgba(0,0,0,0.4); border: 1px dashed rgba(255,255,255,0.2);
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    font-size: 24px; /* 物品图标变大 */ position: relative; transition: all 0.2s;
+}
+.item-slot.has-item {
+    cursor: grab; border-style: solid; background: rgba(255,255,255,0.05);
+    border-color: var(--cyan); box-shadow: 0 4px 12px rgba(0,0,0,0.4), inset 0 0 10px rgba(0,229,255,0.1);
+}
+.item-slot.has-item:hover { transform: translateY(-3px) scale(1.05); border-color: var(--pink); box-shadow: 0 6px 15px rgba(255,71,126,0.4); }
+.item-slot.advanced { border-color: var(--pink); background: rgba(255,71,126,0.08); box-shadow: 0 0 15px rgba(255,71,126,0.3); }
+
+/* 羁绊列表重绘 */
+.syn-list { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.syn-list::-webkit-scrollbar { width: 4px; }
+.syn-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+
+.syn-card {
+    background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 10px; padding: 8px 10px; display: flex; align-items: center; gap: 10px;
+    opacity: 0.6; filter: grayscale(0.8); transition: all 0.3s;
+}
+.syn-card.tier-1 { opacity: 1; filter: none; border-color: rgba(255,255,255,0.2); }
+.syn-card.tier-2 { opacity: 1; filter: none; border-color: #2ed573; box-shadow: 0 0 10px rgba(46,213,115,0.2);}
+.syn-card.tier-3 { opacity: 1; filter: none; border-color: var(--cyan); box-shadow: 0 0 15px rgba(0,229,255,0.3);}
+.syn-card.tier-4 { opacity: 1; filter: none; border-color: var(--pink); box-shadow: 0 0 20px rgba(255,71,126,0.4); background: linear-gradient(90deg, rgba(255,71,126,0.15), transparent);}
+.syn-icon { width: 28px; height: 28px; background: rgba(255,255,255,0.1); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+.syn-name { font-size: 13px; font-weight: 800; color: #fff; }
+.syn-pip { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.2); }
+.syn-pip.active { background: currentColor; box-shadow: 0 0 6px currentColor; }
+
+/* ========= 底部 & 商店 (拟物透明风) ========= */
+.ui-bottom { position: absolute; bottom: 0; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; z-index: 20; }
+.bench-row { display: flex; flex-wrap: wrap; justify-content: center; max-width: 1320px; gap: 10px; padding: 12px 24px; background: linear-gradient(180deg, transparent, rgba(40,34,78,0.72)); border-radius: 20px 20px 0 0; }
+.bench-slot {
+    width: 86px; height: 86px; background: rgba(255,255,255,0.03); backdrop-filter: blur(10px);
+    border: 2px dashed rgba(255,255,255,0.15); border-radius: 12px; position: relative; transition: all 0.2s;
+}
+.bench-slot:hover { border-color: var(--cyan); background: rgba(0,229,255,0.05); }
+
+.shop-bar {
+    width: 100%; max-width: 1500px; display: flex; justify-content: center; align-items: stretch; gap: 16px;
+    padding: 16px 24px 20px; background: rgba(32, 30, 64, 0.76); backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255,255,255,0.1); box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+}
+.level-panel, .gold-panel {
+    width: 200px; display: flex; flex-direction: column; gap: 10px;
+    background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); 
+    border-radius: 16px; padding: 12px;
+}
+.gold-panel { border-color: rgba(241, 196, 15, 0.3); }
+
+/* 购买卡牌（二次元卡池风） */
+.shop-cards { display: flex; gap: 10px; flex: 1; max-width: 980px; }
+.hero-card {
+    flex: 1; min-width: 0; position: relative; cursor: pointer;
+    border-radius: 12px; overflow: hidden; background: rgba(255,255,255,0.02);
+    border: 1px solid var(--card-color, var(--c1));
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.hero-card:hover:not(.locked):not(.empty) { transform: translateY(-10px); box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 0 30px var(--card-glow); }
+.hero-card .cost-strip { position: absolute; top: 0; left: 0; bottom: 0; width: 6px; background: var(--card-color, var(--c1)); box-shadow: 0 0 10px var(--card-color, var(--c1)); z-index: 3;}
+.price-tag { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); border: 1px solid currentColor; padding: 4px 10px; border-radius: 16px; font-size: 14px; font-weight: 800; z-index: 3; color: var(--card-color);}
+.hero-img-wrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding-top: 10px;}
+.hero-img { width: 90px; height: 90px; image-rendering: pixelated; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.7)); transition: transform 0.2s;}
+
+/* 大动作按钮 */
+.btn-fight {
+    background: linear-gradient(135deg, var(--pink), #ff7675); border: none; color: #fff;
+    font-size: 16px; font-weight: 800; letter-spacing: 4px; padding: 12px; border-radius: 12px;
+    cursor: pointer; text-transform: uppercase; transition: all 0.2s; box-shadow: 0 6px 20px rgba(255,71,126,0.4);
+}
+.btn-fight:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(255,71,126,0.6); }
+.btn-fight.combat { background: linear-gradient(135deg, var(--cyan-deep), var(--cyan)); animation: combatPulse 1.5s infinite;}
+@keyframes combatPulse { 50% { box-shadow: 0 6px 25px var(--cyan); } }
+
+/* ========= 杂项 ========= */
+#fx-layer { position: absolute; inset: 0; pointer-events: none; z-index: 100; }
+.tooltip {
+    position: fixed; pointer-events: none; z-index: 9999;
+    background: rgba(15, 20, 35, 0.95); backdrop-filter: blur(10px);
+    border: 1px solid var(--cyan); padding: 14px 18px; border-radius: 12px;
+    min-width: 200px; box-shadow: 0 10px 40px rgba(0,0,0,0.6), 0 0 20px rgba(0,229,255,0.1);
+    opacity: 0; transform: translateY(10px); transition: opacity 0.2s, transform 0.2s; color: #fff;
+}
+.tooltip.show { opacity: 1; transform: translateY(0); }
+.sell-zone {
+    position: static; transform: none;
+    min-height: 42px; padding: 10px 12px; background: rgba(255, 71, 126, 0.18); backdrop-filter: blur(10px);
+    color: white; font-weight: 900; font-size: 13px; border: 1px dashed rgba(255,255,255,0.48); border-radius: 10px;
+    opacity: 1; pointer-events: all; transition: all 0.2s;
+    box-shadow: inset 0 0 18px rgba(255,71,126,0.12); z-index: 50; letter-spacing: 1px;
+    display: grid; place-items: center;
+}
+.sell-zone.active, .sell-zone.drag-over { background: rgba(255, 71, 126, 0.45); border-color: #fff; box-shadow: 0 0 20px rgba(255,71,126,0.45); }
+
+#overlay-msg {
+    position: absolute; left: 50%; top: 86px; width: min(520px, calc(100% - 32px));
+    transform: translateX(-50%) translateY(-10px);
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    z-index: 2000; pointer-events: none; opacity: 0; transition: opacity 0.2s, transform 0.2s;
+    background: rgba(38, 35, 82, 0.62); backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.28); border-radius: 18px; padding: 12px 20px;
+    box-shadow: 0 12px 34px rgba(84, 68, 160, 0.22);
+}
+#overlay-msg.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.overlay-main { font-size: 30px; font-weight: 900; color: #fff; text-transform: uppercase; font-style: italic; letter-spacing: 4px; text-shadow: 0 0 22px currentColor; animation: msgIn 0.28s ease-out; }
+.overlay-sub { font-size: 13px; margin-top: 4px; }
+@keyframes msgIn { 0% { transform: translateY(-8px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+@keyframes hitFlash {
+    0% { background: rgba(255,255,255,0.86); transform: scale(1.04); }
+    100% { background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(0,229,255,0.08)); transform: scale(1); }
+}
+@keyframes castRing {
+    0% { opacity: 1; filter: drop-shadow(0 0 20px var(--gold-bright)); }
+    100% { opacity: 0.72; filter: none; }
+}
+
+/* ========= 补齐控件与响应式适配 ========= */
+.level-display, .gold-row, .stat-row, .syn-progress, .traits {
+    display: flex;
+    align-items: center;
+}
+.level-display { gap: 12px; }
+.level-num {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    color: var(--gold-bright);
+    background: rgba(241, 196, 15, 0.08);
+    border: 1px solid rgba(241, 196, 15, 0.35);
+    font-size: 28px;
+    font-weight: 900;
+}
+.level-info { color: var(--text-mid); font-size: 12px; line-height: 1.35; }
+.xp-bar-bg, .stat-bar-bg {
+    height: 7px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(0,0,0,0.45);
+}
+.xp-bar-fill, .stat-bar {
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--cyan), var(--purple-light));
+}
+.tft-btn {
+    min-height: 38px;
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 10px;
+    background: rgba(255,255,255,0.06);
+    color: #fff;
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 10px;
+}
+.tft-btn:hover:not(:disabled) { border-color: var(--cyan); background: rgba(0,229,255,0.10); }
+.tft-btn:disabled, .btn-fight:disabled, .hero-card.too-poor {
+    opacity: 0.45;
+    cursor: not-allowed;
+    filter: grayscale(0.8);
+}
+.tft-btn.lock.active {
+    color: var(--gold-bright);
+    border-color: rgba(241,196,15,0.45);
+    background: rgba(241,196,15,0.12);
+}
+.gold-row { justify-content: space-between; gap: 12px; }
+.gold-amount { color: var(--gold-bright); font-size: 30px; font-weight: 900; }
+.coin { margin-right: 4px; color: var(--gold); }
+.interest-pip-row { display: flex; gap: 5px; }
+.interest-pip {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.16);
+}
+.interest-pip.active { background: var(--gold-bright); box-shadow: 0 0 10px var(--gold); }
+.hero-card {
+    height: 148px;
+    padding: 10px;
+}
+.hero-card.empty {
+    border-style: dashed;
+    opacity: 0.35;
+    cursor: default;
+}
+.hero-card.locked { box-shadow: inset 0 0 0 1px var(--gold); }
+.hero-card.recommended {
+    border-color: var(--gold-bright);
+    box-shadow: 0 0 22px rgba(255, 242, 130, 0.38), inset 0 0 22px rgba(255, 242, 130, 0.08);
+}
+.recommend-badge {
+    position: absolute; left: 12px; bottom: 34px; z-index: 5;
+    color: #2b2358; background: linear-gradient(90deg, var(--gold-bright), #fff);
+    border-radius: 999px; padding: 3px 8px; font-size: 10px; font-weight: 900;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.28);
+}
+.traits {
+    position: relative;
+    z-index: 4;
+    flex-wrap: wrap;
+    gap: 5px;
+    padding-left: 8px;
+    padding-right: 54px;
+}
+.trait-pill {
+    max-width: 78px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 6px;
+    border-radius: 999px;
+    background: rgba(0,0,0,0.45);
+    font-size: 11px;
+    line-height: 1;
+    white-space: nowrap;
+}
+.trait-pill .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex: 0 0 auto;
+}
+.name-strip {
+    position: absolute;
+    left: 6px;
+    right: 0;
+    bottom: 0;
+    z-index: 4;
+    padding: 9px 10px;
+    background: linear-gradient(180deg, transparent, rgba(0,0,0,0.82) 35%);
+    color: #fff;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 900;
+}
+.stats-area { padding: 12px; overflow-y: auto; }
+.stat-line { margin-bottom: 12px; }
+.stat-row { justify-content: space-between; gap: 8px; font-size: 12px; color: var(--text-mid); }
+.stat-name { color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stat-val { color: var(--gold-bright); }
+.stat-bar { background: linear-gradient(90deg, var(--pink), var(--gold-bright)); }
+.syn-info { flex: 1; min-width: 0; }
+.syn-progress { gap: 6px; font-size: 11px; }
+.syn-pips { display: flex; gap: 4px; flex-wrap: wrap; }
+.syn-pip.next { outline: 1px solid currentColor; outline-offset: 2px; }
+.syn-bonus { margin-top: 4px; color: var(--gold-bright); font-size: 10px; }
+.tt-traits { display: flex; flex-wrap: wrap; gap: 6px; }
+.tt-trait {
+    padding: 3px 7px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.08);
+    font-size: 12px;
+}
+.tt-stats {
+    display: grid;
+    grid-template-columns: auto 1fr auto 1fr;
+    gap: 5px 12px;
+    font-size: 12px;
+}
+.tt-stat-label { color: var(--text-mid); }
+.tt-stat-val { color: #fff; text-align: right; }
+.tt-skill { line-height: 1.45; }
+.projectile {
+    position: fixed;
+    width: 12px;
+    height: 12px;
+    margin: -6px 0 0 -6px;
+    border-radius: 50%;
+    background: var(--proj-color, var(--cyan));
+    box-shadow: 0 0 16px var(--proj-color, var(--cyan));
+    transition: left 0.22s linear, top 0.22s linear;
+}
+.dmg-text, .skill-text {
+    position: fixed;
+    transform: translate(-50%, -50%);
+    color: #fff;
+    font-weight: 900;
+    text-shadow: 0 2px 6px #000;
+    animation: floatUp 0.95s ease-out forwards;
+}
+.dmg-text.crit, .dmg-text.skill { color: var(--gold-bright); font-size: 18px; }
+.skill-text {
+    color: var(--cyan);
+    font-size: 13px;
+    white-space: nowrap;
+}
+.champion.attacking.attack-right img { animation: lungeRight 0.32s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.champion.attacking.attack-left img { animation: lungeLeft 0.32s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.merge-fx {
+    position: fixed;
+    width: 18px;
+    height: 18px;
+    margin: -9px 0 0 -9px;
+    border-radius: 50%;
+    border: 2px solid var(--gold-bright);
+    animation: mergeBurst 0.8s ease-out forwards;
+}
+.merge-spark {
+    position: fixed;
+    width: 8px;
+    height: 8px;
+    margin: -4px 0 0 -4px;
+    border-radius: 50%;
+    background: var(--gold-bright);
+    box-shadow: 0 0 12px var(--gold-bright);
+    animation: sparkFly 0.75s ease-out forwards;
+}
+.restart-btn {
+    margin-top: 18px;
+    border: 0;
+    border-radius: 10px;
+    padding: 10px 18px;
+    color: #fff;
+    background: var(--pink);
+    font: inherit;
+    font-weight: 900;
+    cursor: pointer;
+}
+@keyframes floatUp {
+    to { opacity: 0; transform: translate(-50%, -115%); }
+}
+@keyframes mergeBurst {
+    to { opacity: 0; transform: scale(7); }
+}
+@keyframes lungeRight {
+    0% { transform: translate(0, 0) scale(1); }
+    42% { transform: translate(16px, -9px) scale(1.18) rotate(4deg); }
+    100% { transform: translate(0, 0) scale(1); }
+}
+@keyframes lungeLeft {
+    0% { transform: translate(0, 0) scale(1); }
+    42% { transform: translate(-16px, -9px) scale(1.18) rotate(-4deg); }
+    100% { transform: translate(0, 0) scale(1); }
+}
+@keyframes sparkFly {
+    0% { opacity: 1; transform: translate(0, 0) scale(1); }
+    100% { opacity: 0; transform: translate(var(--sx), var(--sy)) scale(0.2); }
+}
+
+@media (max-width: 1180px), (max-height: 760px) {
+    body, html { overflow: auto; }
+    #app {
+        min-width: 980px;
+        min-height: 720px;
+        overflow: hidden;
+    }
+    .ui-left, .ui-right { width: 190px; }
+    .ui-left { left: 14px; }
+    .ui-right { right: 14px; }
+    .battle-area { top: 86px; bottom: 236px; }
+    .hex-slot { width: 82px; height: 94px; }
+    .hex-row.offset { margin-left: 46px; }
+    .champion-img-wrap, .champion img { width: 70px; height: 70px; }
+    .shop-bar { padding: 12px 14px 14px; gap: 10px; }
+    .level-panel, .gold-panel { width: 166px; padding: 10px; }
+    .shop-cards { gap: 8px; }
+    .hero-card { height: 130px; }
+    .hero-img { width: 76px; height: 76px; }
+    .bench-slot { width: 72px; height: 72px; }
+}
+
+@media (max-width: 720px) {
+    #app {
+        min-width: 0;
+        min-height: 980px;
+        height: auto;
+        overflow: visible;
+        padding-bottom: 0;
+    }
+    .ui-top {
+        position: sticky;
+        top: 0;
+        padding: 10px;
+        align-items: center;
+        background: rgba(11,13,23,0.82);
+        backdrop-filter: blur(12px);
+    }
+    .stage-pill { padding: 8px 18px; border-radius: 14px; border: 1px solid var(--border-soft); }
+    .player-card { padding: 8px 12px 8px 8px; }
+    .player-avatar { width: 38px; height: 38px; font-size: 19px; }
+    .top-actions { gap: 6px; }
+    .icon-btn { padding: 8px 10px; }
+    .ui-left, .ui-right {
+        position: static;
+        width: auto;
+        margin: 10px;
+        max-height: none;
+    }
+    .ui-left { order: 2; }
+    .battle-area {
+        position: relative;
+        top: auto;
+        bottom: auto;
+        min-height: 430px;
+        overflow-x: auto;
+        justify-content: flex-start;
+        padding: 18px 10px;
+    }
+    .board-stack { min-width: 670px; margin: 0 auto; }
+    .ui-bottom {
+        position: static;
+        margin-top: 10px;
+    }
+    .bench-row {
+        width: 100%;
+        overflow-x: auto;
+        justify-content: flex-start;
+        border-radius: 0;
+    }
+    .shop-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .level-panel, .gold-panel { width: auto; }
+    .shop-cards {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        max-width: none;
+    }
+    .hero-card { min-height: 132px; }
+    .overlay-main { font-size: 44px; letter-spacing: 4px; }
+}
+
+</style>
+</head>
+<body>
+
+<div id="app">
+    <div class="ui-top">
+        <div class="player-card">
+            <div class="player-avatar">⚔️</div>
+            <div class="player-info">
+                <div class="player-name">召唤师</div>
+                <div class="hp-row">
+                    <span class="heart">❤</span><span id="player-hp">100</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="stage-pill">
+            <div class="stage-label">STAGE</div>
+            <div class="stage-value" id="stage-text">1-1</div>
+            <div class="round-timer"><div class="round-timer-fill" id="round-timer-fill"></div></div>
+        </div>
+
+        <div class="top-actions">
+            <div class="icon-btn streak" id="streak-btn">
+                🔥 <span id="streak-text">0</span>
+            </div>
+            <div class="icon-btn speed" onclick="toggleSpeed()">
+                ⏵ <span id="speed-text">2X</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="battle-area">
+        <div class="board-stack" id="board-stack">
+            <div class="hex-row" id="enemy-row-0"></div>
+            <div class="hex-row offset" id="enemy-row-1"></div>
+            <div class="field-divider"></div>
+            <div class="hex-row offset" id="player-row-0"></div>
+            <div class="hex-row" id="player-row-1"></div>
+        </div>
+    </div>
+
+    <div class="ui-left">
+        <div class="panel-header">★ 羁绊 SYNERGIES</div>
+        <div class="syn-list" id="syn-list"></div>
+    </div>
+
+    <div class="ui-right">
+        <div class="side-panel equipment-panel">
+            <div class="panel-header">⚒ 装备库</div>
+            <div class="inventory-grid" id="inventory-grid"></div>
+        </div>
+        <div class="side-panel" style="flex: 1;">
+            <div class="panel-header">⚔ 战斗统计</div>
+            <div class="stats-area" id="stats-area"></div>
+        </div>
+    </div>
+
+    <div class="ui-bottom">
+        <div class="bench-row" id="bench-row"></div>
+        <div class="shop-bar">
+            <div class="level-panel">
+                <div class="level-display">
+                    <div class="level-num" id="level-num">3</div>
+                    <div class="level-info">
+                        <div>LEVEL</div>
+                        <div><span id="pop-current">0</span>/<span id="pop-max">3</span></div>
+                    </div>
+                </div>
+                <div class="xp-bar-bg"><div class="xp-bar-fill" id="xp-bar-fill" style="width:0%"></div></div>
+                <button class="tft-btn exp" id="btn-exp" onclick="buyXP()">
+                    <span>买经验 +4XP</span><span class="cost">💰3</span>
+                </button>
+            </div>
+
+            <div class="shop-cards" id="shop-cards"></div>
+
+        <div class="gold-panel">
+            <div class="gold-row">
+                <div class="gold-amount"><span class="coin">⊙</span><span id="gold-amt">16</span></div>
+                <div class="interest-pip-row">
+                        <div class="interest-pip" id="ip-1"></div>
+                        <div class="interest-pip" id="ip-2"></div>
+                        <div class="interest-pip" id="ip-3"></div>
+                        <div class="interest-pip" id="ip-4"></div>
+                    <div class="interest-pip" id="ip-5"></div>
+                </div>
+            </div>
+            <button class="tft-btn lock" id="btn-lock" onclick="toggleShopLock()">
+                <span id="lock-text">锁定商店</span><span class="cost">🔓</span>
+            </button>
+            <button class="tft-btn roll" id="btn-roll" onclick="rollShop(true)">
+                <span>刷新</span><span class="cost">💰1</span>
+            </button>
+            <button class="btn-fight" id="btn-combat" onclick="startCombat()">
+                开战
+                </button>
+            <div id="sell-zone" class="sell-zone" ondrop="drop(event, 'sell', 0)" ondragover="allowDrop(event)">拖拽出售</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="fx-layer"></div>
+<div id="overlay-msg"></div>
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+const TYPE_NAME = { 
+    fire:'焰心', water:'星泉', grass:'森语', electric:'雷鸣', ghost:'月影', dragon:'龙裔', fighting:'热血', ice:'霜华', normal:'元气', psychic:'灵念', fairy:'梦华', steel:'星钢', wind:'风语', light:'圣光', shadow:'夜幕',
+    tank:'守护', assassin:'幻刺', fighter:'斗魂', marksman:'灵射', mage:'秘法', support:'祈愿', summoner:'召唤', guardian:'结界', dancer:'舞者', ranger:'游侠'
+};
+
+const TYPE_ICON = {
+    fire:'🔥', water:'💧', grass:'🌿', electric:'⚡', ghost:'👻', dragon:'🐉', fighting:'👊', ice:'❄️', normal:'⚪', psychic:'🔮', fairy:'🌸', steel:'⚙️', wind:'🍃', light:'☀️', shadow:'🌙',
+    tank:'🛡', assassin:'🗡', fighter:'⚔', marksman:'🏹', mage:'✨', support:'💫', summoner:'🧩', guardian:'🔷', dancer:'🎀', ranger:'🎯'
+};
+
+const SYN_TIERS = {
+    fire:[2,4,6], water:[2,4,6], grass:[2,4,6], electric:[2,4,6], ghost:[2,4,6], dragon:[2,3,5], fighting:[2,4,6], ice:[2,4], normal:[2,4], psychic:[2,4,6], fairy:[2,4,6], steel:[2,4], wind:[2,4], light:[2,4,6], shadow:[2,4,6],
+    tank:[2,4,6], assassin:[2,4,6], fighter:[2,4,6], marksman:[2,4,6], mage:[2,4,6], support:[2,3,5], summoner:[2,4], guardian:[2,4,6], dancer:[2,4], ranger:[2,4,6]
+};
+
+const BASE_ITEMS = { 
+    sword: { id:'sword', icon:'🗡', name:'大剑', stats:{atk:15}, desc:'+15 攻击力', type:'base' },
+    bow:   { id:'bow',   icon:'🏹', name:'反曲弓', stats:{as:0.15}, desc:'+15% 攻速', type:'base' },
+    rod:   { id:'rod',   icon:'🪄', name:'灵气法杖', stats:{ap:15}, desc:'+15 法强', type:'base' },
+    tear:  { id:'tear',  icon:'💧', name:'女神之泪', stats:{startMana:15}, desc:'+15 初始法力', type:'base' },
+    armor: { id:'armor', icon:'🛡', name:'锁子甲', stats:{armor:20}, desc:'+20 护甲', type:'base' },
+    cloak: { id:'cloak', icon:'🧥', name:'女神斗篷', stats:{mr:20}, desc:'+20 魔抗', type:'base' },
+    belt:  { id:'belt',  icon:'🎀', name:'巨人腰带', stats:{hp:150}, desc:'+150 生命', type:'base' },
+    glove: { id:'glove', icon:'🧤', name:'拳套', stats:{crit:0.2}, desc:'+20% 暴击', type:'base' },
+    spat:  { id:'spat',  icon:'✨', name:'星徽铲', stats:{}, desc:'可合成人口徽章', type:'base' },
+    orb:   { id:'orb',   icon:'🌟', name:'羁绊星石', stats:{ap:10,startMana:10}, desc:'+10法强 +10初始法力', type:'base' },
+    boots: { id:'boots', icon:'👢', name:'疾风靴', stats:{as:0.12,crit:0.08}, desc:'+12%攻速 +8%暴击', type:'base' }
+};
+
+const RECIPES = {
+    'sword_sword': { icon:'⚔️', name:'无尽之刃', stats:{atk:30, crit:0.3}, desc:'+30攻 +30%暴击' },
+    'sword_bow':   { icon:'🌪', name:'巨人杀手', stats:{atk:25, as:0.15}, desc:'+25攻 +15%攻速' },
+    'sword_rod':   { icon:'💀', name:'破法之帽', stats:{atk:20, ap:25}, desc:'+20攻 +25法强' },
+    'sword_tear':  { icon:'⚡', name:'回响刃', stats:{atk:25, startMana:15}, desc:'攻击回蓝' },
+    'sword_armor': { icon:'🔱', name:'泰坦的决心', stats:{atk:15, armor:20}, desc:'+攻防' },
+    'sword_belt':  { icon:'🩸', name:'饮血剑', stats:{atk:25, hp:150}, desc:'+攻击和生命' },
+    'sword_glove': { icon:'🌟', name:'星爆之刃', stats:{atk:20, crit:0.4}, desc:'高暴击' },
+    'bow_bow':     { icon:'🏹', name:'迅捷之刃', stats:{as:0.5}, desc:'+50%攻速' },
+    'bow_rod':     { icon:'⚙️', name:'卢登的回响', stats:{as:0.15, ap:25}, desc:'技能溅射' },
+    'bow_tear':    { icon:'🎭', name:'青龙刀', stats:{as:0.2, startMana:15}, desc:'攻击回蓝' },
+    'bow_armor':   { icon:'⏳', name:'守望长弓', stats:{as:0.15, armor:20}, desc:'+攻速护甲' },
+    'rod_rod':     { icon:'📕', name:'拉巴顿法帽', stats:{ap:75}, desc:'+75法强' },
+    'rod_tear':    { icon:'🌀', name:'宇宙脉冲', stats:{ap:25, startMana:15}, desc:'技能启动更快' },
+    'rod_armor':   { icon:'⚜️', name:'星盾法袍', stats:{ap:15, armor:20}, desc:'+法强护甲' },
+    'tear_tear':   { icon:'🔋', name:'蓝霸符', stats:{startMana:40}, desc:'大量初始法力' },
+    'armor_armor': { icon:'🛡', name:'石像鬼石板甲', stats:{armor:50}, desc:'+50护甲' },
+    'armor_cloak': { icon:'🪬', name:'凝魂挽歌', stats:{armor:25, mr:25}, desc:'双抗' },
+    'cloak_cloak': { icon:'☁️', name:'女神之拥', stats:{mr:50}, desc:'+50魔抗' },
+    'belt_belt':   { icon:'⛓', name:'狂徒铠甲', stats:{hp:320}, desc:'+320生命' },
+    'belt_tear':   { icon:'🔮', name:'振奋盔甲', stats:{hp:160, startMana:15}, desc:'生命和回蓝' },
+    'glove_glove': { icon:'⚡', name:'狂战之力', stats:{crit:0.5, as:0.2}, desc:'暴击攻速' },
+    'glove_rod':   { icon:'🌌', name:'星界法爆', stats:{ap:30, crit:0.2}, desc:'法术暴击' },
+    'spat_spat':   { icon:'👑', name:'星徽王冠', stats:{pop:1}, desc:'上阵人口 +1' },
+    'spat_belt':   { icon:'🎖', name:'远征徽章', stats:{pop:1,hp:120}, desc:'上阵人口 +1，+生命' },
+    'spat_orb':    { icon:'💠', name:'羁绊核心', stats:{pop:1,ap:15}, desc:'上阵人口 +1，+法强' },
+    'boots_bow':   { icon:'🪽', name:'风行者', stats:{as:0.35,crit:0.12}, desc:'高速输出' },
+    'orb_orb':     { icon:'🌠', name:'星愿法典', stats:{ap:45,startMana:25}, desc:'法系启动装' }
+};
+
+const CHAMP_POOL = [
+    {
+        bId: "p001",
+        c: 1,
+        t: "fire",
+        cls: "mage",
+        traits: [
+            "fire",
+            "mage",
+            "light"
+        ],
+        skill: "喷射火焰",
+        evos: [
+            {
+                n: "小火龙",
+                h: 550,
+                a: 38,
+                i: "4"
+            },
+            {
+                n: "火恐龙",
+                h: 990,
+                a: 68,
+                i: "5"
+            },
+            {
+                n: "喷火龙",
+                h: 1782,
+                a: 123,
+                i: "6"
+            }
+        ]
+    },
+    {
+        bId: "p002",
+        c: 1,
+        t: "water",
+        cls: "tank",
+        traits: [
+            "water",
+            "tank",
+            "guardian"
+        ],
+        skill: "高压水枪",
+        evos: [
+            {
+                n: "杰尼龟",
+                h: 680,
+                a: 28,
+                i: "7"
+            },
+            {
+                n: "卡咪龟",
+                h: 1224,
+                a: 50,
+                i: "8"
+            },
+            {
+                n: "水箭龟",
+                h: 2203,
+                a: 90,
+                i: "9"
+            }
+        ]
+    },
+    {
+        bId: "p003",
+        c: 1,
+        t: "grass",
+        cls: "mage",
+        traits: [
+            "grass",
+            "mage",
+            "support"
+        ],
+        skill: "飞叶快刀",
+        evos: [
+            {
+                n: "妙蛙种子",
+                h: 580,
+                a: 34,
+                i: "1"
+            },
+            {
+                n: "妙蛙草",
+                h: 1044,
+                a: 61,
+                i: "2"
+            },
+            {
+                n: "妙蛙花",
+                h: 1879,
+                a: 110,
+                i: "3"
+            }
+        ]
+    },
+    {
+        bId: "p004",
+        c: 1,
+        t: "electric",
+        cls: "marksman",
+        traits: [
+            "electric",
+            "marksman",
+            "ranger"
+        ],
+        skill: "十万伏特",
+        evos: [
+            {
+                n: "皮丘",
+                h: 420,
+                a: 42,
+                i: "172"
+            },
+            {
+                n: "皮卡丘",
+                h: 756,
+                a: 75,
+                i: "25"
+            },
+            {
+                n: "雷丘",
+                h: 1360,
+                a: 136,
+                i: "26"
+            }
+        ]
+    },
+    {
+        bId: "p005",
+        c: 1,
+        t: "ghost",
+        cls: "assassin",
+        traits: [
+            "ghost",
+            "assassin",
+            "shadow"
+        ],
+        skill: "暗影偷袭",
+        evos: [
+            {
+                n: "鬼斯",
+                h: 480,
+                a: 50,
+                i: "92"
+            },
+            {
+                n: "鬼斯通",
+                h: 864,
+                a: 90,
+                i: "93"
+            },
+            {
+                n: "耿鬼",
+                h: 1555,
+                a: 162,
+                i: "94"
+            }
+        ]
+    },
+    {
+        bId: "p006",
+        c: 1,
+        t: "dragon",
+        cls: "fighter",
+        traits: [
+            "dragon",
+            "fighter",
+            "wind"
+        ],
+        skill: "神龙猛扑",
+        evos: [
+            {
+                n: "迷你龙",
+                h: 620,
+                a: 46,
+                i: "147"
+            },
+            {
+                n: "哈克龙",
+                h: 1116,
+                a: 82,
+                i: "148"
+            },
+            {
+                n: "快龙",
+                h: 2008,
+                a: 149,
+                i: "149"
+            }
+        ]
+    },
+    {
+        bId: "p007",
+        c: 1,
+        t: "fire",
+        cls: "fighter",
+        traits: [
+            "fire",
+            "fighter",
+            "ranger"
+        ],
+        skill: "烈火灼烧",
+        evos: [
+            {
+                n: "卡蒂狗",
+                h: 600,
+                a: 40,
+                i: "58"
+            },
+            {
+                n: "风速狗",
+                h: 1080,
+                a: 72,
+                i: "59"
+            },
+            {
+                n: "巨风速狗",
+                h: 1944,
+                a: 129,
+                i: "59"
+            }
+        ]
+    },
+    {
+        bId: "p008",
+        c: 1,
+        t: "normal",
+        cls: "support",
+        traits: [
+            "normal",
+            "support",
+            "fairy"
+        ],
+        skill: "星愿祝福",
+        evos: [
+            {
+                n: "伊布",
+                h: 540,
+                a: 36,
+                i: "133"
+            },
+            {
+                n: "仙子伊布",
+                h: 972,
+                a: 64,
+                i: "700"
+            },
+            {
+                n: "星愿伊布",
+                h: 1749,
+                a: 116,
+                i: "700"
+            }
+        ]
+    },
+    {
+        bId: "p009",
+        c: 2,
+        t: "grass",
+        cls: "mage",
+        traits: [
+            "grass",
+            "mage",
+            "summoner"
+        ],
+        skill: "阳光烈焰",
+        evos: [
+            {
+                n: "蛋蛋",
+                h: 620,
+                a: 44,
+                i: "102"
+            },
+            {
+                n: "椰蛋树",
+                h: 1116,
+                a: 79,
+                i: "103"
+            },
+            {
+                n: "神椰蛋树",
+                h: 2008,
+                a: 142,
+                i: "103"
+            }
+        ]
+    },
+    {
+        bId: "p010",
+        c: 2,
+        t: "fighting",
+        cls: "tank",
+        traits: [
+            "fighting",
+            "tank",
+            "steel"
+        ],
+        skill: "地震",
+        evos: [
+            {
+                n: "小拳石",
+                h: 760,
+                a: 34,
+                i: "74"
+            },
+            {
+                n: "隆隆石",
+                h: 1368,
+                a: 61,
+                i: "75"
+            },
+            {
+                n: "隆隆岩",
+                h: 2462,
+                a: 110,
+                i: "76"
+            }
+        ]
+    },
+    {
+        bId: "p011",
+        c: 2,
+        t: "electric",
+        cls: "mage",
+        traits: [
+            "electric",
+            "mage",
+            "steel"
+        ],
+        skill: "电磁波",
+        evos: [
+            {
+                n: "小磁怪",
+                h: 520,
+                a: 50,
+                i: "81"
+            },
+            {
+                n: "三合一磁怪",
+                h: 936,
+                a: 90,
+                i: "82"
+            },
+            {
+                n: "巨电磁怪",
+                h: 1684,
+                a: 162,
+                i: "462"
+            }
+        ]
+    },
+    {
+        bId: "p012",
+        c: 2,
+        t: "water",
+        cls: "fighter",
+        traits: [
+            "water",
+            "fighter",
+            "ranger"
+        ],
+        skill: "破坏死光",
+        evos: [
+            {
+                n: "蚊香蝌蚪",
+                h: 610,
+                a: 46,
+                i: "60"
+            },
+            {
+                n: "蚊香君",
+                h: 1098,
+                a: 82,
+                i: "61"
+            },
+            {
+                n: "蚊香泳士",
+                h: 1976,
+                a: 149,
+                i: "62"
+            }
+        ]
+    },
+    {
+        bId: "p013",
+        c: 2,
+        t: "ghost",
+        cls: "mage",
+        traits: [
+            "ghost",
+            "mage",
+            "psychic"
+        ],
+        skill: "精神干扰",
+        evos: [
+            {
+                n: "凯西",
+                h: 470,
+                a: 58,
+                i: "63"
+            },
+            {
+                n: "勇基拉",
+                h: 846,
+                a: 104,
+                i: "64"
+            },
+            {
+                n: "胡地",
+                h: 1522,
+                a: 187,
+                i: "65"
+            }
+        ]
+    },
+    {
+        bId: "p014",
+        c: 2,
+        t: "fire",
+        cls: "mage",
+        traits: [
+            "fire",
+            "mage",
+            "dancer"
+        ],
+        skill: "火焰踢",
+        evos: [
+            {
+                n: "火稚鸡",
+                h: 620,
+                a: 52,
+                i: "255"
+            },
+            {
+                n: "力壮鸡",
+                h: 1116,
+                a: 93,
+                i: "256"
+            },
+            {
+                n: "火焰鸡",
+                h: 2008,
+                a: 168,
+                i: "257"
+            }
+        ]
+    },
+    {
+        bId: "p015",
+        c: 2,
+        t: "water",
+        cls: "marksman",
+        traits: [
+            "water",
+            "marksman",
+            "guardian"
+        ],
+        skill: "水流喷射",
+        evos: [
+            {
+                n: "水跃鱼",
+                h: 640,
+                a: 55,
+                i: "258"
+            },
+            {
+                n: "沼跃鱼",
+                h: 1152,
+                a: 99,
+                i: "259"
+            },
+            {
+                n: "巨沼怪",
+                h: 2073,
+                a: 178,
+                i: "260"
+            }
+        ]
+    },
+    {
+        bId: "p016",
+        c: 2,
+        t: "grass",
+        cls: "tank",
+        traits: [
+            "grass",
+            "tank",
+            "wind"
+        ],
+        skill: "叶刃",
+        evos: [
+            {
+                n: "木守宫",
+                h: 720,
+                a: 42,
+                i: "252"
+            },
+            {
+                n: "森林蜥蜴",
+                h: 1296,
+                a: 75,
+                i: "253"
+            },
+            {
+                n: "蜥蜴王",
+                h: 2332,
+                a: 136,
+                i: "254"
+            }
+        ]
+    },
+    {
+        bId: "p017",
+        c: 2,
+        t: "electric",
+        cls: "fighter",
+        traits: [
+            "electric",
+            "fighter",
+            "light"
+        ],
+        skill: "雷电拳",
+        evos: [
+            {
+                n: "电击兽",
+                h: 660,
+                a: 58,
+                i: "125"
+            },
+            {
+                n: "电击魔兽",
+                h: 1188,
+                a: 104,
+                i: "466"
+            },
+            {
+                n: "极光电击魔兽",
+                h: 2138,
+                a: 187,
+                i: "466"
+            }
+        ]
+    },
+    {
+        bId: "p018",
+        c: 2,
+        t: "ice",
+        cls: "support",
+        traits: [
+            "ice",
+            "support",
+            "water"
+        ],
+        skill: "冰冻光线",
+        evos: [
+            {
+                n: "小海狮",
+                h: 620,
+                a: 46,
+                i: "86"
+            },
+            {
+                n: "白海狮",
+                h: 1116,
+                a: 82,
+                i: "87"
+            },
+            {
+                n: "神白海狮",
+                h: 2008,
+                a: 149,
+                i: "87"
+            }
+        ]
+    },
+    {
+        bId: "p019",
+        c: 2,
+        t: "fairy",
+        cls: "support",
+        traits: [
+            "fairy",
+            "support",
+            "dancer"
+        ],
+        skill: "月光治愈",
+        evos: [
+            {
+                n: "皮皮",
+                h: 600,
+                a: 44,
+                i: "35"
+            },
+            {
+                n: "皮可西",
+                h: 1080,
+                a: 79,
+                i: "36"
+            },
+            {
+                n: "月华皮可西",
+                h: 1944,
+                a: 142,
+                i: "36"
+            }
+        ]
+    },
+    {
+        bId: "p020",
+        c: 2,
+        t: "steel",
+        cls: "tank",
+        traits: [
+            "steel",
+            "tank",
+            "guardian"
+        ],
+        skill: "金属爪",
+        evos: [
+            {
+                n: "大岩蛇",
+                h: 780,
+                a: 38,
+                i: "95"
+            },
+            {
+                n: "大钢蛇",
+                h: 1404,
+                a: 68,
+                i: "208"
+            },
+            {
+                n: "星钢大蛇",
+                h: 2527,
+                a: 123,
+                i: "208"
+            }
+        ]
+    },
+    {
+        bId: "p021",
+        c: 3,
+        t: "ghost",
+        cls: "assassin",
+        traits: [
+            "ghost",
+            "assassin",
+            "psychic"
+        ],
+        skill: "梦魇",
+        evos: [
+            {
+                n: "梦妖",
+                h: 620,
+                a: 72,
+                i: "200"
+            },
+            {
+                n: "梦妖魔",
+                h: 1116,
+                a: 129,
+                i: "429"
+            },
+            {
+                n: "神梦妖魔",
+                h: 2008,
+                a: 233,
+                i: "429"
+            }
+        ]
+    },
+    {
+        bId: "p022",
+        c: 3,
+        t: "dragon",
+        cls: "fighter",
+        traits: [
+            "dragon",
+            "fighter",
+            "fire"
+        ],
+        skill: "龙之爪",
+        evos: [
+            {
+                n: "宝贝龙",
+                h: 760,
+                a: 64,
+                i: "371"
+            },
+            {
+                n: "甲壳龙",
+                h: 1368,
+                a: 115,
+                i: "372"
+            },
+            {
+                n: "暴飞龙",
+                h: 2462,
+                a: 207,
+                i: "373"
+            }
+        ]
+    },
+    {
+        bId: "p023",
+        c: 3,
+        t: "fighting",
+        cls: "fighter",
+        traits: [
+            "fighting",
+            "fighter",
+            "guardian"
+        ],
+        skill: "地裂",
+        evos: [
+            {
+                n: "腕力",
+                h: 780,
+                a: 60,
+                i: "66"
+            },
+            {
+                n: "豪力",
+                h: 1404,
+                a: 108,
+                i: "67"
+            },
+            {
+                n: "怪力",
+                h: 2527,
+                a: 194,
+                i: "68"
+            }
+        ]
+    },
+    {
+        bId: "p024",
+        c: 3,
+        t: "electric",
+        cls: "mage",
+        traits: [
+            "electric",
+            "mage",
+            "water"
+        ],
+        skill: "放电",
+        evos: [
+            {
+                n: "伏特鳗",
+                h: 620,
+                a: 68,
+                i: "170"
+            },
+            {
+                n: "电鳗鱼",
+                h: 1116,
+                a: 122,
+                i: "171"
+            },
+            {
+                n: "神电鳗鱼",
+                h: 2008,
+                a: 220,
+                i: "171"
+            }
+        ]
+    },
+    {
+        bId: "p025",
+        c: 3,
+        t: "normal",
+        cls: "tank",
+        traits: [
+            "normal",
+            "tank",
+            "support"
+        ],
+        skill: "重击",
+        evos: [
+            {
+                n: "小福蛋",
+                h: 900,
+                a: 42,
+                i: "440"
+            },
+            {
+                n: "吉利蛋",
+                h: 1620,
+                a: 75,
+                i: "113"
+            },
+            {
+                n: "幸福蛋",
+                h: 2916,
+                a: 136,
+                i: "242"
+            }
+        ]
+    },
+    {
+        bId: "p026",
+        c: 3,
+        t: "fire",
+        cls: "fighter",
+        traits: [
+            "fire",
+            "fighter",
+            "steel"
+        ],
+        skill: "熔岩爆裂",
+        evos: [
+            {
+                n: "火岩鼠",
+                h: 760,
+                a: 70,
+                i: "322"
+            },
+            {
+                n: "呆火驼",
+                h: 1368,
+                a: 126,
+                i: "323"
+            },
+            {
+                n: "神呆火驼",
+                h: 2462,
+                a: 226,
+                i: "323"
+            }
+        ]
+    },
+    {
+        bId: "p027",
+        c: 3,
+        t: "water",
+        cls: "tank",
+        traits: [
+            "water",
+            "tank",
+            "ice"
+        ],
+        skill: "冰枪",
+        evos: [
+            {
+                n: "大舌贝",
+                h: 900,
+                a: 54,
+                i: "90"
+            },
+            {
+                n: "刺甲贝",
+                h: 1620,
+                a: 97,
+                i: "91"
+            },
+            {
+                n: "神刺甲贝",
+                h: 2916,
+                a: 174,
+                i: "91"
+            }
+        ]
+    },
+    {
+        bId: "p028",
+        c: 3,
+        t: "grass",
+        cls: "marksman",
+        traits: [
+            "grass",
+            "marksman",
+            "fairy"
+        ],
+        skill: "飞叶风暴",
+        evos: [
+            {
+                n: "走路草",
+                h: 680,
+                a: 76,
+                i: "43"
+            },
+            {
+                n: "臭臭花",
+                h: 1224,
+                a: 136,
+                i: "44"
+            },
+            {
+                n: "霸王花",
+                h: 2203,
+                a: 246,
+                i: "45"
+            }
+        ]
+    },
+    {
+        bId: "p029",
+        c: 3,
+        t: "electric",
+        cls: "assassin",
+        traits: [
+            "electric",
+            "assassin",
+            "ranger"
+        ],
+        skill: "电球",
+        evos: [
+            {
+                n: "雷电球",
+                h: 620,
+                a: 82,
+                i: "100"
+            },
+            {
+                n: "顽皮雷弹",
+                h: 1116,
+                a: 147,
+                i: "101"
+            },
+            {
+                n: "神顽皮雷弹",
+                h: 2008,
+                a: 265,
+                i: "101"
+            }
+        ]
+    },
+    {
+        bId: "p030",
+        c: 3,
+        t: "ghost",
+        cls: "mage",
+        traits: [
+            "ghost",
+            "mage",
+            "shadow"
+        ],
+        skill: "梦境",
+        evos: [
+            {
+                n: "催眠貘",
+                h: 720,
+                a: 74,
+                i: "96"
+            },
+            {
+                n: "引梦貘人",
+                h: 1296,
+                a: 133,
+                i: "97"
+            },
+            {
+                n: "神引梦貘人",
+                h: 2332,
+                a: 239,
+                i: "97"
+            }
+        ]
+    },
+    {
+        bId: "p031",
+        c: 3,
+        t: "water",
+        cls: "mage",
+        traits: [
+            "water",
+            "mage",
+            "psychic"
+        ],
+        skill: "宇宙星光",
+        evos: [
+            {
+                n: "海星星",
+                h: 680,
+                a: 84,
+                i: "120"
+            },
+            {
+                n: "宝石海星",
+                h: 1224,
+                a: 151,
+                i: "121"
+            },
+            {
+                n: "神宝石海星",
+                h: 2203,
+                a: 272,
+                i: "121"
+            }
+        ]
+    },
+    {
+        bId: "p032",
+        c: 3,
+        t: "fighting",
+        cls: "assassin",
+        traits: [
+            "fighting",
+            "assassin",
+            "wind"
+        ],
+        skill: "飞天踢",
+        evos: [
+            {
+                n: "沙瓦郎",
+                h: 760,
+                a: 78,
+                i: "106"
+            },
+            {
+                n: "快拳郎",
+                h: 1368,
+                a: 140,
+                i: "107"
+            },
+            {
+                n: "踢拳战神",
+                h: 2462,
+                a: 252,
+                i: "107"
+            }
+        ]
+    },
+    {
+        bId: "p033",
+        c: 4,
+        t: "fire",
+        cls: "mage",
+        traits: [
+            "fire",
+            "mage",
+            "fairy"
+        ],
+        skill: "魔法火焰",
+        evos: [
+            {
+                n: "六尾",
+                h: 760,
+                a: 88,
+                i: "37"
+            },
+            {
+                n: "九尾",
+                h: 1368,
+                a: 158,
+                i: "38"
+            },
+            {
+                n: "神九尾",
+                h: 2462,
+                a: 285,
+                i: "38"
+            }
+        ]
+    },
+    {
+        bId: "p034",
+        c: 4,
+        t: "fighting",
+        cls: "fighter",
+        traits: [
+            "fighting",
+            "fighter",
+            "shadow"
+        ],
+        skill: "怒火冲天",
+        evos: [
+            {
+                n: "怒猿",
+                h: 1000,
+                a: 86,
+                i: "56"
+            },
+            {
+                n: "火爆猴",
+                h: 1800,
+                a: 154,
+                i: "57"
+            },
+            {
+                n: "神火爆猴",
+                h: 3240,
+                a: 278,
+                i: "57"
+            }
+        ]
+    },
+    {
+        bId: "p035",
+        c: 4,
+        t: "ghost",
+        cls: "assassin",
+        traits: [
+            "ghost",
+            "assassin",
+            "shadow"
+        ],
+        skill: "夜暗冲击",
+        evos: [
+            {
+                n: "阿勃梭鲁",
+                h: 880,
+                a: 122,
+                i: "359"
+            },
+            {
+                n: "神阿勃梭鲁",
+                h: 1584,
+                a: 219,
+                i: "359"
+            },
+            {
+                n: "真神阿勃梭鲁",
+                h: 2851,
+                a: 395,
+                i: "359"
+            }
+        ]
+    },
+    {
+        bId: "p036",
+        c: 4,
+        t: "electric",
+        cls: "marksman",
+        traits: [
+            "electric",
+            "marksman",
+            "light"
+        ],
+        skill: "雷神之锤",
+        evos: [
+            {
+                n: "雷公",
+                h: 930,
+                a: 118,
+                i: "243"
+            },
+            {
+                n: "神雷公",
+                h: 1674,
+                a: 212,
+                i: "243"
+            },
+            {
+                n: "真神雷公",
+                h: 3013,
+                a: 382,
+                i: "243"
+            }
+        ]
+    },
+    {
+        bId: "p037",
+        c: 4,
+        t: "fire",
+        cls: "fighter",
+        traits: [
+            "fire",
+            "fighter",
+            "light"
+        ],
+        skill: "神火炎",
+        evos: [
+            {
+                n: "炎帝",
+                h: 1100,
+                a: 102,
+                i: "244"
+            },
+            {
+                n: "神炎帝",
+                h: 1980,
+                a: 183,
+                i: "244"
+            },
+            {
+                n: "真神炎帝",
+                h: 3564,
+                a: 330,
+                i: "244"
+            }
+        ]
+    },
+    {
+        bId: "p038",
+        c: 4,
+        t: "water",
+        cls: "mage",
+        traits: [
+            "water",
+            "mage",
+            "ice"
+        ],
+        skill: "水流冲击",
+        evos: [
+            {
+                n: "水君",
+                h: 980,
+                a: 112,
+                i: "245"
+            },
+            {
+                n: "神水君",
+                h: 1764,
+                a: 201,
+                i: "245"
+            },
+            {
+                n: "真神水君",
+                h: 3175,
+                a: 362,
+                i: "245"
+            }
+        ]
+    },
+    {
+        bId: "p039",
+        c: 4,
+        t: "psychic",
+        cls: "mage",
+        traits: [
+            "psychic",
+            "mage",
+            "support"
+        ],
+        skill: "心灵风暴",
+        evos: [
+            {
+                n: "沙奈朵",
+                h: 860,
+                a: 126,
+                i: "280"
+            },
+            {
+                n: "星愿沙奈朵",
+                h: 1548,
+                a: 226,
+                i: "282"
+            },
+            {
+                n: "神沙奈朵",
+                h: 2786,
+                a: 408,
+                i: "282"
+            }
+        ]
+    },
+    {
+        bId: "p040",
+        c: 4,
+        t: "steel",
+        cls: "tank",
+        traits: [
+            "steel",
+            "tank",
+            "dragon"
+        ],
+        skill: "波导星拳",
+        evos: [
+            {
+                n: "路卡利欧",
+                h: 1050,
+                a: 106,
+                i: "447"
+            },
+            {
+                n: "神路卡利欧",
+                h: 1890,
+                a: 190,
+                i: "448"
+            },
+            {
+                n: "真神路卡利欧",
+                h: 3402,
+                a: 343,
+                i: "448"
+            }
+        ]
+    },
+    {
+        bId: "p041",
+        c: 4,
+        t: "wind",
+        cls: "ranger",
+        traits: [
+            "wind",
+            "ranger",
+            "grass"
+        ],
+        skill: "缝影箭",
+        evos: [
+            {
+                n: "狙射木枭",
+                h: 900,
+                a: 120,
+                i: "722"
+            },
+            {
+                n: "神狙射木枭",
+                h: 1620,
+                a: 216,
+                i: "724"
+            },
+            {
+                n: "真神狙射木枭",
+                h: 2916,
+                a: 388,
+                i: "724"
+            }
+        ]
+    },
+    {
+        bId: "p042",
+        c: 4,
+        t: "fairy",
+        cls: "dancer",
+        traits: [
+            "fairy",
+            "dancer",
+            "support"
+        ],
+        skill: "天使之吻",
+        evos: [
+            {
+                n: "波克比",
+                h: 840,
+                a: 104,
+                i: "175"
+            },
+            {
+                n: "波克基古",
+                h: 1512,
+                a: 187,
+                i: "176"
+            },
+            {
+                n: "波克基斯",
+                h: 2721,
+                a: 336,
+                i: "468"
+            }
+        ]
+    },
+    {
+        bId: "p043",
+        c: 5,
+        t: "ghost",
+        cls: "mage",
+        traits: [
+            "ghost",
+            "mage",
+            "psychic"
+        ],
+        skill: "精神灭杀",
+        evos: [
+            {
+                n: "超梦",
+                h: 1200,
+                a: 160,
+                i: "150"
+            },
+            {
+                n: "神超梦",
+                h: 2160,
+                a: 288,
+                i: "150"
+            },
+            {
+                n: "真神超梦",
+                h: 3888,
+                a: 518,
+                i: "150"
+            }
+        ]
+    },
+    {
+        bId: "p044",
+        c: 5,
+        t: "dragon",
+        cls: "fighter",
+        traits: [
+            "dragon",
+            "fighter",
+            "wind"
+        ],
+        skill: "神龙裂空",
+        evos: [
+            {
+                n: "烈空坐",
+                h: 1400,
+                a: 145,
+                i: "384"
+            },
+            {
+                n: "神烈空坐",
+                h: 2520,
+                a: 261,
+                i: "384"
+            },
+            {
+                n: "真神烈空坐",
+                h: 4536,
+                a: 469,
+                i: "384"
+            }
+        ]
+    },
+    {
+        bId: "p045",
+        c: 5,
+        t: "fire",
+        cls: "mage",
+        traits: [
+            "fire",
+            "mage",
+            "light"
+        ],
+        skill: "灭世火焰",
+        evos: [
+            {
+                n: "火焰鸟",
+                h: 1120,
+                a: 172,
+                i: "146"
+            },
+            {
+                n: "神火焰鸟",
+                h: 2016,
+                a: 309,
+                i: "146"
+            },
+            {
+                n: "真神火焰鸟",
+                h: 3628,
+                a: 557,
+                i: "146"
+            }
+        ]
+    },
+    {
+        bId: "p046",
+        c: 5,
+        t: "electric",
+        cls: "mage",
+        traits: [
+            "electric",
+            "mage",
+            "wind"
+        ],
+        skill: "神之雷霆",
+        evos: [
+            {
+                n: "闪电鸟",
+                h: 1120,
+                a: 176,
+                i: "145"
+            },
+            {
+                n: "神闪电鸟",
+                h: 2016,
+                a: 316,
+                i: "145"
+            },
+            {
+                n: "真神闪电鸟",
+                h: 3628,
+                a: 570,
+                i: "145"
+            }
+        ]
+    },
+    {
+        bId: "p047",
+        c: 5,
+        t: "ice",
+        cls: "mage",
+        traits: [
+            "ice",
+            "mage",
+            "water"
+        ],
+        skill: "极寒领域",
+        evos: [
+            {
+                n: "急冻鸟",
+                h: 1160,
+                a: 166,
+                i: "144"
+            },
+            {
+                n: "神急冻鸟",
+                h: 2088,
+                a: 298,
+                i: "144"
+            },
+            {
+                n: "真神急冻鸟",
+                h: 3758,
+                a: 537,
+                i: "144"
+            }
+        ]
+    },
+    {
+        bId: "p048",
+        c: 5,
+        t: "psychic",
+        cls: "support",
+        traits: [
+            "psychic",
+            "support",
+            "fairy"
+        ],
+        skill: "幻梦祝福",
+        evos: [
+            {
+                n: "梦幻",
+                h: 1040,
+                a: 150,
+                i: "151"
+            },
+            {
+                n: "神梦幻",
+                h: 1872,
+                a: 270,
+                i: "151"
+            },
+            {
+                n: "真神梦幻",
+                h: 3369,
+                a: 486,
+                i: "151"
+            }
+        ]
+    },
+    {
+        bId: "p049",
+        c: 5,
+        t: "steel",
+        cls: "tank",
+        traits: [
+            "steel",
+            "tank",
+            "light"
+        ],
+        skill: "彗星重拳",
+        evos: [
+            {
+                n: "巨金怪",
+                h: 1350,
+                a: 132,
+                i: "374"
+            },
+            {
+                n: "神巨金怪",
+                h: 2430,
+                a: 237,
+                i: "376"
+            },
+            {
+                n: "真神巨金怪",
+                h: 4374,
+                a: 427,
+                i: "376"
+            }
+        ]
+    },
+    {
+        bId: "p050",
+        c: 5,
+        t: "shadow",
+        cls: "assassin",
+        traits: [
+            "shadow",
+            "assassin",
+            "ghost"
+        ],
+        skill: "黑夜梦魇",
+        evos: [
+            {
+                n: "达克莱伊",
+                h: 1080,
+                a: 178,
+                i: "491"
+            },
+            {
+                n: "神达克莱伊",
+                h: 1944,
+                a: 320,
+                i: "491"
+            },
+            {
+                n: "真神达克莱伊",
+                h: 3499,
+                a: 576,
+                i: "491"
+            }
+        ]
+    },
+    {
+        bId: "p051",
+        c: 5,
+        t: "dragon",
+        cls: "mage",
+        traits: [
+            "dragon",
+            "mage",
+            "psychic"
+        ],
+        skill: "龙星脉冲",
+        evos: [
+            {
+                n: "拉帝亚斯",
+                h: 1120,
+                a: 158,
+                i: "380"
+            },
+            {
+                n: "神拉帝亚斯",
+                h: 2016,
+                a: 284,
+                i: "380"
+            },
+            {
+                n: "真神拉帝亚斯",
+                h: 3628,
+                a: 511,
+                i: "380"
+            }
+        ]
+    },
+    {
+        bId: "p052",
+        c: 5,
+        t: "water",
+        cls: "fighter",
+        traits: [
+            "water",
+            "fighter",
+            "guardian"
+        ],
+        skill: "海皇怒涛",
+        evos: [
+            {
+                n: "盖欧卡",
+                h: 1380,
+                a: 142,
+                i: "382"
+            },
+            {
+                n: "神盖欧卡",
+                h: 2484,
+                a: 255,
+                i: "382"
+            },
+            {
+                n: "真神盖欧卡",
+                h: 4471,
+                a: 460,
+                i: "382"
+            }
+        ]
+    },
+    {
+        bId: "p053",
+        c: 6,
+        t: "light",
+        cls: "mage",
+        traits: [
+            "light",
+            "mage",
+            "dragon"
+        ],
+        skill: "创世裁决",
+        evos: [
+            {
+                n: "阿尔宙斯",
+                h: 1600,
+                a: 210,
+                i: "493"
+            },
+            {
+                n: "星神阿尔宙斯",
+                h: 2880,
+                a: 378,
+                i: "493"
+            },
+            {
+                n: "创世阿尔宙斯",
+                h: 5184,
+                a: 680,
+                i: "493"
+            }
+        ]
+    },
+    {
+        bId: "p054",
+        c: 6,
+        t: "shadow",
+        cls: "assassin",
+        traits: [
+            "shadow",
+            "assassin",
+            "dragon"
+        ],
+        skill: "反转世界",
+        evos: [
+            {
+                n: "骑拉帝纳",
+                h: 1550,
+                a: 220,
+                i: "487"
+            },
+            {
+                n: "冥王骑拉帝纳",
+                h: 2790,
+                a: 396,
+                i: "487"
+            },
+            {
+                n: "真冥王骑拉帝纳",
+                h: 5022,
+                a: 712,
+                i: "487"
+            }
+        ]
+    },
+    {
+        bId: "p055",
+        c: 6,
+        t: "psychic",
+        cls: "support",
+        traits: [
+            "psychic",
+            "support",
+            "summoner"
+        ],
+        skill: "异次元召唤",
+        evos: [
+            {
+                n: "胡帕",
+                h: 1450,
+                a: 205,
+                i: "720"
+            },
+            {
+                n: "解放胡帕",
+                h: 2610,
+                a: 369,
+                i: "720"
+            },
+            {
+                n: "星界胡帕",
+                h: 4698,
+                a: 664,
+                i: "720"
+            }
+        ]
+    },
+    {
+        bId: "p056",
+        c: 6,
+        t: "steel",
+        cls: "fighter",
+        traits: [
+            "steel",
+            "fighter",
+            "light"
+        ],
+        skill: "日冕钢牙",
+        evos: [
+            {
+                n: "索尔迦雷欧",
+                h: 1700,
+                a: 198,
+                i: "791"
+            },
+            {
+                n: "日冕索尔",
+                h: 3060,
+                a: 356,
+                i: "791"
+            },
+            {
+                n: "真日冕索尔",
+                h: 5508,
+                a: 641,
+                i: "791"
+            }
+        ]
+    },
+    {
+        bId: "p057",
+        c: 6,
+        t: "fairy",
+        cls: "mage",
+        traits: [
+            "fairy",
+            "mage",
+            "light"
+        ],
+        skill: "月蚀星河",
+        evos: [
+            {
+                n: "露奈雅拉",
+                h: 1500,
+                a: 216,
+                i: "792"
+            },
+            {
+                n: "月华露奈",
+                h: 2700,
+                a: 388,
+                i: "792"
+            },
+            {
+                n: "真月华露奈",
+                h: 4860,
+                a: 699,
+                i: "792"
+            }
+        ]
+    }
+];
+
+CHAMP_POOL.forEach(c => {
+    let last = c.evos[2];
+    c.evos.push({ n:'★' + last.n, h:Math.floor(last.h * 1.55), a:Math.floor(last.a * 1.55), i:last.i });
+    c.evos.push({ n:'★★' + last.n, h:Math.floor(last.h * 2.35), a:Math.floor(last.a * 2.35), i:last.i });
+});
+
+const SHOP_ODDS = {
+    1: [100, 0, 0, 0, 0, 0],
+    2: [ 70,30, 0, 0, 0, 0],
+    3: [ 45,35,20, 0, 0, 0],
+    4: [ 30,35,25,10, 0, 0],
+    5: [ 20,30,30,15, 5, 0],
+    6: [ 12,24,32,24, 8, 0],
+    7: [  8,18,30,28,14, 2],
+    8: [  5,12,24,34,21, 4],
+    9: [  0, 8,20,36,30, 6],
+    10:[  0, 4,16,34,36,10],
+    11:[  0, 0,10,30,45,15],
+    12:[  0, 0, 5,25,50,20]
+};
+const XP_TABLE = [0, 0, 2, 6, 10, 20, 36, 56, 80, 104, 132, 166, 999];
+const SHOP_POOL_SIZE = { 1:99, 2:99, 3:99, 4:99, 5:99, 6:99 };
+
+
+const GAME = {
+    hp: 100, gold: 16, stage: 1, sub: 1, level: 3, xp: 0,
+    speed: 2, inCombat: false,
+    streak: 0, 
+    shop: [], shopLocked: false,
+    activeSynergies: {},
+    inventory: [],
+    board: new Array(17).fill(null),
+    bench: new Array(15).fill(null),
+    enemy: new Array(17).fill(null),
+    stats: {},
+    pool: {}
+};
+
+function initPool() {
+    GAME.pool = {};
+    CHAMP_POOL.forEach(c => { GAME.pool[c.bId] = SHOP_POOL_SIZE[c.c]; });
+}
+
+
+
+function getUnitTraits(template) {
+    return template.traits || [template.t, template.cls].filter(Boolean);
+}
+
+function getPlayerPopBonus() {
+    return GAME.board.reduce((sum, u) => sum + ((u?.items || []).reduce((s, it) => s + (it.stats?.pop || 0), 0)), 0);
+}
+
+function getRecommendedTraits() {
+    let counts = {};
+    let seen = {};
+    GAME.board.forEach(u => {
+        if(!u) return;
+        getUnitTraits(u.template).forEach(k => {
+            let key = k + '_' + u.bId;
+            if(seen[key]) return;
+            seen[key] = true;
+            counts[k] = (counts[k] || 0) + 1;
+        });
+    });
+    let rec = new Set();
+    Object.entries(counts).forEach(([k, n]) => {
+        let tiers = SYN_TIERS[k] || [];
+        let next = tiers.find(t => t > n);
+        if(next && next - n <= 2) rec.add(k);
+        if(!next && n > 0) rec.add(k);
+    });
+    return rec;
+}
+
+function initBoard() {
+    let html_e0 = '', html_e1 = '', html_p0 = '', html_p1 = '';
+    for(let i=0; i<8; i++) html_e0 += `<div class="hex-slot enemy-row" id="enemy-slot-${i}"></div>`;
+    for(let i=8; i<17; i++) html_e1 += `<div class="hex-slot enemy-row" id="enemy-slot-${i}"></div>`;
+    for(let i=0; i<9; i++) html_p0 += `<div class="hex-slot" id="board-slot-${i}" ondrop="drop(event,'board',${i})" ondragover="allowDrop(event)"></div>`;
+    for(let i=9; i<17; i++) html_p1 += `<div class="hex-slot" id="board-slot-${i}" ondrop="drop(event,'board',${i})" ondragover="allowDrop(event)"></div>`;
+    document.getElementById('enemy-row-0').innerHTML = html_e0;
+    document.getElementById('enemy-row-1').innerHTML = html_e1;
+    document.getElementById('player-row-0').innerHTML = html_p0;
+    document.getElementById('player-row-1').innerHTML = html_p1;
+
+    let bench = '';
+    for(let i=0; i<15; i++) bench += `<div class="bench-slot" id="bench-slot-${i}" ondrop="drop(event,'bench',${i})" ondragover="allowDrop(event)"></div>`;
+    document.getElementById('bench-row').innerHTML = bench;
+
+    renderInventory();
+}
+
+function updateUI() {
+    document.getElementById('player-hp').innerText = Math.max(0, Math.floor(GAME.hp));
+    document.getElementById('gold-amt').innerText = GAME.gold;
+    document.getElementById('stage-text').innerText = `${GAME.stage}-${GAME.sub}`;
+    
+    let curPop = GAME.board.filter(c => c !== null).length;
+    let popBonus = getPlayerPopBonus();
+    let popMax = GAME.level + popBonus;
+    document.getElementById('pop-current').innerText = curPop;
+    document.getElementById('pop-max').innerText = popMax;
+    document.getElementById('pop-current').style.color = curPop > popMax ? 'var(--pink)' : '#fff';
+    document.getElementById('level-num').innerText = GAME.level;
+
+    let xpMax = window.XP_TABLE_REF[GAME.level] || 1; 
+    let xpPct = GAME.level >= 12 ? 100 : (GAME.xp / xpMax) * 100;
+    document.getElementById('xp-bar-fill').style.width = xpPct + '%';
+    
+    let interest = Math.min(5, Math.floor(GAME.gold / 10));
+    for(let i=1; i<=5; i++) {
+        document.getElementById('ip-'+i).classList.toggle('active', i <= interest);
+    }
+
+    let streakStr = GAME.streak === 0 ? '0' : (GAME.streak > 0 ? '+'+GAME.streak : ''+GAME.streak);
+    let streakIcon = GAME.streak > 0 ? '🔥' : (GAME.streak < 0 ? '💀' : '➖');
+    document.getElementById('streak-text').innerText = streakStr;
+    document.getElementById('streak-btn').firstChild.textContent = streakIcon + ' ';
+
+    document.getElementById('btn-combat').disabled = GAME.inCombat || curPop === 0;
+    document.getElementById('btn-combat').classList.toggle('combat', GAME.inCombat);
+    document.getElementById('btn-combat').textContent = GAME.inCombat ? '战斗中…' : '开始接战';
+    document.getElementById('btn-roll').disabled = GAME.inCombat || GAME.gold < 1;
+    document.getElementById('btn-exp').disabled = GAME.inCombat || GAME.gold < 3 || GAME.level >= 12;
+    let lockBtn = document.getElementById('btn-lock');
+    if(lockBtn) {
+        lockBtn.classList.toggle('active', GAME.shopLocked);
+        lockBtn.disabled = GAME.inCombat;
+        document.getElementById('lock-text').innerText = GAME.shopLocked ? '已锁定' : '锁定商店';
+        lockBtn.querySelector('.cost').innerText = GAME.shopLocked ? '🔒' : '🔓';
+    }
+    document.getElementById('speed-text').innerText = GAME.speed + 'X';
+
+    document.getElementById('board-stack').classList.toggle('in-combat', GAME.inCombat);
+
+    renderShop();
+    renderUnits();
+    renderInventory();
+    renderStats();
+    renderSynergies();
+}
+
+function renderUnits() {
+    for(let i=0; i<17; i++) renderSingle(`board-slot-${i}`, GAME.board[i], 'board', i, false);
+    for(let i=0; i<15; i++) renderSingle(`bench-slot-${i}`, GAME.bench[i], 'bench', i, false);
+    for(let i=0; i<17; i++) renderSingle(`enemy-slot-${i}`, GAME.enemy[i], 'enemy', i, true);
+}
+
+function renderSingle(elId, u, type, idx, isEnemy) {
+    let el = document.getElementById(elId);
+    if(!el) return;
+    el.innerHTML = '';
+    if(!u || u.hp <= 0) return;
+
+    let pct = (u.hp / u.maxHp) * 100;
+    let manaPct = u.mana ? Math.min(100, (u.mana / (u.maxMana||100)) * 100) : 0;
+    let starClass = 's' + Math.min(5, u.star + 1);
+    let stars = '★'.repeat(u.star + 1);
+    let imgSrc = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${u.img}.png`;
+
+    let itemsHtml = '';
+    if(u.items && u.items.length) {
+        u.items.forEach(it => itemsHtml += `<div class="item-mini" title="${it.name}">${it.icon}</div>`);
+    }
+
+    let typeColor = `var(--${u.template ? u.template.t : 'normal'})`;
+    let costColor = `var(--c${u.template ? u.template.c : 1})`;
+
+    /* 核心修改：新增悬浮的身价(totalCost)可视化标签 */
+    let costBadgeHtml = !isEnemy ? `<div class="cost-badge" style="color:${costColor}; border-color:${costColor}; text-shadow: 0 0 6px ${costColor};">💎${u.totalCost}</div>` : '';
+
+    el.innerHTML = `
+        <div class="champion ${!isEnemy?'draggable':''} ${isEnemy?'enemy':''}" 
+             style="--unit-color: ${costColor}"
+             draggable="${!isEnemy && !GAME.inCombat}" 
+             ondragstart="drag(event,'${type}',${idx})"
+             onmouseenter="showTooltip(event, ${idx}, '${type}')"
+             onmouseleave="hideTooltip()">
+            ${costBadgeHtml}
+            <div class="stars ${starClass}">${stars}</div>
+            <div class="hp-bar"><div class="hp-fill" style="width:${pct}%"></div></div>
+            <div class="mana-bar"><div class="mana-fill" style="width:${manaPct}%"></div></div>
+            <div class="champion-img-wrap">
+                <img src="${imgSrc}" onerror="this.style.opacity=0.2">
+            </div>
+            <div class="items">${itemsHtml}</div>
+        </div>`;
+}
+
+function renderShop() {
+    let el = document.getElementById('shop-cards');
+    el.innerHTML = '';
+    let rec = getRecommendedTraits();
+    GAME.shop.forEach((c, idx) => {
+        if(!c) {
+            el.innerHTML += `<div class="hero-card empty"></div>`;
+            return;
+        }
+        let canBuy = GAME.gold >= c.c;
+        let traits = getUnitTraits(c);
+        let traitHtml = traits.map(k => `<div class="trait-pill" style="color:var(--${k})"><span class="dot" style="background:var(--${k})"></span>${TYPE_NAME[k] || k}</div>`).join('');
+        let recommended = traits.some(k => rec.has(k));
+        el.innerHTML += `
+            <div class="hero-card cost-${c.c} ${recommended?'recommended':''} ${!canBuy?'too-poor':''} ${GAME.shopLocked?'locked':''}" 
+                 style="--card-color: var(--c${c.c}); --card-glow: var(--c${c.c});"
+                 onclick="buyChampion(${idx})">
+                <div class="cost-strip"></div>
+                ${recommended ? '<div class="recommend-badge">推荐羁绊</div>' : ''}
+                <div class="traits">${traitHtml}</div>
+                <div class="price-tag" style="color: var(--c${c.c})">💎${c.c}</div>
+                <div class="hero-img-wrap">
+                    <img class="hero-img" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${c.evos[0].i}.png" onerror="this.style.opacity=0.3">
+                </div>
+                <div class="name-strip">${c.evos[0].n}</div>
+            </div>`;
+    });
+}
+
+function renderInventory() {
+    let el = document.getElementById('inventory-grid');
+    el.innerHTML = '';
+    for(let i=0; i<10; i++) {
+        let it = GAME.inventory[i];
+        if(it) {
+            el.innerHTML += `<div class="item-slot has-item ${it.type==='advanced'?'advanced':''}"
+                draggable="true"
+                ondragstart="drag(event,'item',${i})"
+                ondrop="drop(event,'inventory-item',${i})"
+                ondragover="allowDrop(event)"
+                onmouseenter="showItemTooltip(event,${i})"
+                onmouseleave="hideTooltip()">${it.icon}</div>`;
+        } else {
+            el.innerHTML += `<div class="item-slot"></div>`;
+        }
+    }
+}
+
+function renderStats() {
+    let el = document.getElementById('stats-area');
+    el.innerHTML = '';
+    let entries = Object.values(GAME.stats).filter(s => s && s.name);
+    if(entries.length === 0) {
+        el.innerHTML = `<div style="text-align:center; color:var(--text-dim); font-size:12px; padding:20px;">>> 待机中... <<</div>`;
+        return;
+    }
+    entries.sort((a,b) => b.dmg - a.dmg);
+    let max = entries[0].dmg || 1;
+    entries.forEach(s => {
+        let pct = (s.dmg / max) * 100;
+        el.innerHTML += `
+            <div class="stat-line">
+                <div class="stat-row">
+                    <span class="stat-name">${s.name}</span>
+                    <span class="stat-val">${s.dmg}</span>
+                </div>
+                <div class="stat-bar-bg"><div class="stat-bar" style="width:${pct}%"></div></div>
+            </div>`;
+    });
+}
+
+function renderSynergies() {
+    let el = document.getElementById('syn-list');
+    let counts = {};
+    let traits = {};
+    GAME.board.forEach(p => {
+        if(!p) return;
+        getUnitTraits(p.template).forEach(k => {
+            let key = k + '_' + p.bId;
+            if(!traits[key]) {
+                traits[key] = true;
+                counts[k] = (counts[k] || 0) + 1;
+            }
+        });
+    });
+
+    let html = '';
+    let entries = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+    if(entries.length === 0) {
+        el.innerHTML = `<div style="text-align:center; color:var(--text-dim); font-size:11px; padding:30px 4px;">部署角色以激活羁绊回路</div>`;
+        return;
+    }
+
+    entries.forEach(([k, n]) => {
+        let tiers = SYN_TIERS[k] || [];
+        let tier = 0;
+        for(let i = tiers.length - 1; i >= 0; i--) {
+            if(n >= tiers[i]) { tier = i + 1; break; }
+        }
+        let nextTier = tiers.find(t => t > n);
+        let pipsHtml = '';
+        let maxTier = tiers[tiers.length-1] || 2;
+        for(let i = 1; i <= maxTier; i++) {
+            let cls = '';
+            if(i <= n) cls = 'active';
+            else if(nextTier && i === nextTier) cls = 'next';
+            pipsHtml += `<div class="syn-pip ${cls}"></div>`;
+        }
+        let progress = nextTier ? `${n}/${nextTier}` : `${n} ★`;
+        html += `
+            <div class="syn-card tier-${tier}" style="color:var(--${k})">
+                <div class="syn-icon">${TYPE_ICON[k] || '?'}</div>
+                <div class="syn-info">
+                    <div class="syn-name">${TYPE_NAME[k] || k}</div>
+                    <div class="syn-progress" style="margin-top: 4px;">
+                        <div class="syn-pips">${pipsHtml}</div>
+                        <span style="margin-left:auto;color:var(--text-mid)">${progress}</span>
+                    </div>
+                    ${tier ? `<div class="syn-bonus">羁绊 ${tier} 阶已生效</div>` : ''}
+                </div>
+            </div>`;
+    });
+    el.innerHTML = html;
+}
+
+function showTooltip(ev, idx, type) {
+    let arr = type === 'board' ? GAME.board : (type === 'bench' ? GAME.bench : GAME.enemy);
+    let u = arr[idx]; if(!u) return;
+    let tt = document.getElementById('tooltip');
+    let evo = u.template.evos[u.star];
+    let baseAtk = evo.a;
+    let totalAtk = u.atk || baseAtk;
+    let bonus = u.itemBonus || {};
+    let itemList = u.items && u.items.length ? '<div class="tt-skill" style="margin-top: 10px;">'+u.items.map(it=>`${it.icon} ${it.name}`).join(' · ')+'</div>' : '';
+    
+    tt.innerHTML = `
+        <div class="tt-name" style="font-size: 16px; margin-bottom: 8px;">${'★'.repeat(u.star+1)} ${u.name}</div>
+        <div class="tt-traits">
+            ${getUnitTraits(u.template).map(k => `<span class="tt-trait" style="color:var(--${k})">${TYPE_ICON[k] || '◇'} ${TYPE_NAME[k] || k}</span>`).join('')}
+        </div>
+        <div class="tt-stats" style="margin-top: 8px;">
+            <span class="tt-stat-label">生命</span><span class="tt-stat-val">${Math.floor(u.maxHp)}</span>
+            <span class="tt-stat-label">攻击</span><span class="tt-stat-val">${Math.floor(totalAtk)}</span>
+            <span class="tt-stat-label">法强</span><span class="tt-stat-val">${Math.floor(u.ap || bonus.ap || 0)}</span>
+            <span class="tt-stat-label">攻速</span><span class="tt-stat-val">${Math.round(((u.attackSpeed || 1 + (bonus.as||0)) - 1) * 100)}%</span>
+            <span class="tt-stat-label">护甲</span><span class="tt-stat-val">${Math.floor(u.armor ?? (20 + (bonus.armor||0)))}</span>
+            <span class="tt-stat-label">魔抗</span><span class="tt-stat-val">${Math.floor(u.mr ?? (20 + (bonus.mr||0)))}</span>
+            <span class="tt-stat-label">暴击</span><span class="tt-stat-val">${Math.round((u.crit || bonus.crit || 0) * 100)}%</span>
+        </div>
+        <div class="tt-skill" style="color: var(--cyan); margin-top: 8px;">✨ 技能: ${u.template.skill}</div>
+        ${itemList}`;
+    tt.style.left = (ev.clientX + 20) + 'px';
+    tt.style.top = (ev.clientY - 80) + 'px';
+    tt.classList.add('show');
+}
+
+function showItemTooltip(ev, idx) {
+    let it = GAME.inventory[idx]; if(!it) return;
+    let tt = document.getElementById('tooltip');
+    tt.innerHTML = `
+        <div class="tt-name" style="font-size: 16px;">${it.icon} ${it.name}</div>
+        <div class="tt-skill" style="color:var(--gold-bright); font-size: 13px; margin: 6px 0;">${it.desc}</div>
+        ${it.type === 'base' ? '<div style="font-size:11px;color:var(--text-mid);">基础材料</div>' : '<div style="font-size:11px;color:var(--pink);">高级合成核心</div>'}`;
+    tt.style.left = (ev.clientX + 20) + 'px';
+    tt.style.top = (ev.clientY - 60) + 'px';
+    tt.classList.add('show');
+}
+
+function hideTooltip() { document.getElementById('tooltip').classList.remove('show'); }
+
+function showBigMsg(main, sub = '', dur = 1500, cls = '') {
+    let el = document.getElementById('overlay-msg');
+    el.innerHTML = `
+        <div class="overlay-main ${cls}" style="color: ${cls === 'victory' ? 'var(--cyan)' : (cls === 'defeat' ? 'var(--pink)' : '#fff')}">${main}</div>
+        ${sub ? '<div class="overlay-sub" style="color: #fff; font-weight: bold;">'+sub+'</div>' : ''}`;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), dur);
+}
+
+function showMergeFX(elId) {
+    let el = document.getElementById(elId);
+    if(!el) return;
+    let r = el.getBoundingClientRect();
+    let layer = document.getElementById('fx-layer');
+    let fx = document.createElement('div');
+    fx.className = 'merge-fx';
+    fx.style.left = (r.left + r.width/2) + 'px';
+    fx.style.top = (r.top + r.height/2) + 'px';
+    layer.appendChild(fx);
+    for(let i = 0; i < 12; i++) {
+        let spark = document.createElement('div');
+        let angle = (Math.PI * 2 / 12) * i;
+        spark.className = 'merge-spark';
+        spark.style.left = (r.left + r.width/2) + 'px';
+        spark.style.top = (r.top + r.height/2) + 'px';
+        spark.style.setProperty('--sx', Math.cos(angle) * 58 + 'px');
+        spark.style.setProperty('--sy', Math.sin(angle) * 58 + 'px');
+        layer.appendChild(spark);
+        setTimeout(() => spark.remove(), 760);
+    }
+    setTimeout(() => fx.remove(), 800);
+}
+
+window.showTooltip = showTooltip;
+window.showItemTooltip = showItemTooltip;
+window.hideTooltip = hideTooltip;
+
+
+
+// 将 XP_TABLE 挂载到全局供 ui.js 读取
+window.XP_TABLE_REF = XP_TABLE;
+window.GAME = GAME;
+
+let combatTimer = null;
+let combatTickCount = 0;
+
+function getUnitTraits(template) {
+    return template.traits || [template.t, template.cls].filter(Boolean);
+}
+
+function getPlayerPopCap() {
+    let itemPop = GAME.board.reduce((sum, u) => sum + ((u?.items || []).reduce((s, it) => s + (it.stats?.pop || 0), 0)), 0);
+    return GAME.level + itemPop;
+}
+
+function pickFromPool(cost) {
+    let pool = CHAMP_POOL.filter(c => c.c === cost);
+    if(pool.length === 0) {
+        pool = CHAMP_POOL;
+        if(pool.length === 0) return null;
+    }
+    return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function rollShop(payCost) {
+    if(payCost) {
+        if(GAME.gold < 1 || GAME.inCombat) return;
+        GAME.gold -= 1;
+    }
+    GAME.shop = [];
+    let odds = SHOP_ODDS[Math.min(12, GAME.level)];
+    for(let i=0; i<6; i++) {
+        let r = Math.random() * 100;
+        let cost = 1, acc = 0;
+        for(let j=0; j<odds.length; j++) {
+            acc += odds[j];
+            if(r <= acc) { cost = j+1; break; }
+        }
+        if(i === 0 && GAME.level >= 3) cost = Math.max(cost, 2);
+        if(i === 4 && GAME.level >= 4) cost = Math.max(cost, 3);
+        if(i === 2 && GAME.level >= 6) cost = Math.max(cost, 4);
+        if(i === 2 && GAME.level >= 7) cost = 5;
+        if(i === 5 && GAME.level >= 8) cost = Math.max(cost, 5);
+        if(i === 3 && GAME.level >= 10) cost = Math.max(cost, 6);
+        let pick = pickFromPool(cost);
+        GAME.shop.push(pick);
+    }
+    GAME.shopLocked = false;
+    updateUI();
+}
+
+function toggleShopLock() {
+    if(GAME.inCombat) return;
+    GAME.shopLocked = !GAME.shopLocked;
+    updateUI();
+}
+
+function buyChampion(idx) {
+    if(GAME.inCombat) return;
+    let t = GAME.shop[idx];
+    if(!t || GAME.gold < t.c) return;
+    
+    let sameUnits = [];
+    GAME.board.forEach((c,i) => { if(c && c.bId === t.bId && c.star === 0) sameUnits.push({l:'board',i}); });
+    GAME.bench.forEach((c,i) => { if(c && c.bId === t.bId && c.star === 0) sameUnits.push({l:'bench',i}); });
+    let willMerge = sameUnits.length >= 2;
+
+    let bIdx = GAME.bench.findIndex(x => x === null);
+    let boardIdx = GAME.board.findIndex(x => x === null);
+    let canAutoDeploy = !willMerge && boardIdx !== -1 && GAME.board.filter(c => c).length < getPlayerPopCap();
+    if(bIdx === -1 && !willMerge && !canAutoDeploy) {
+        showBigMsg('备战席已满', '拖拽出售或上阵角色', 900);
+        return;
+    }
+
+    GAME.gold -= t.c;
+    GAME.shop[idx] = null;
+
+    let evo = t.evos[0];
+    let unit = {
+        bId: t.bId, template: t, star: 0,
+        name: evo.n, img: evo.i, hp: evo.h, maxHp: evo.h, atk: evo.a,
+        mana: 0, maxMana: 100, items: [], totalCost: t.c, itemBonus: {}
+    };
+
+    if(canAutoDeploy) {
+        GAME.board[boardIdx] = unit;
+    } else if(willMerge) {
+        if(bIdx !== -1) GAME.bench[bIdx] = unit;
+        else GAME.bench.push(unit);
+    } else {
+        GAME.bench[bIdx] = unit;
+    }
+
+    checkMerge(t.bId);
+    while(GAME.bench.length > 15) {
+        let idx2 = GAME.bench.lastIndexOf(null);
+        if(idx2 >= 15) GAME.bench.splice(idx2, 1);
+        else break;
+    }
+    updateUI();
+}
+
+function checkMerge(bId) {
+    let starLevel = 0;
+    while(starLevel < 4) {
+        let found = [];
+        GAME.board.forEach((c,i) => { if(c && c.bId === bId && c.star === starLevel) found.push({l:'board',i}); });
+        GAME.bench.forEach((c,i) => { if(c && c.bId === bId && c.star === starLevel) found.push({l:'bench',i}); });
+        let mergeNeed = starLevel < 2 ? 3 : 2;
+        if(found.length < mergeNeed) break;
+
+        let keep = found[0];
+        let keepArr = keep.l === 'board' ? GAME.board : GAME.bench;
+        let keepUnit = keepArr[keep.i];
+        let allItems = [...(keepUnit.items||[])];
+        for(let j=1; j<mergeNeed; j++) {
+            let f = found[j];
+            let arr = f.l === 'board' ? GAME.board : GAME.bench;
+            allItems = allItems.concat(arr[f.i].items || []);
+            arr[f.i] = null;
+        }
+        
+        keepUnit.star++;
+        let nextEvo = keepUnit.template.evos[keepUnit.star];
+        keepUnit.name = nextEvo.n;
+        keepUnit.img = nextEvo.i;
+        keepUnit.maxHp = nextEvo.h;
+        keepUnit.hp = nextEvo.h;
+        keepUnit.atk = nextEvo.a;
+        keepUnit.totalCost = keepUnit.totalCost * mergeNeed;
+        keepUnit.items = allItems.slice(0, 3);
+
+        if(allItems.length > 3) allItems.slice(3).forEach(it => GAME.inventory.push(it));
+        recalcItemBonus(keepUnit);
+        showMergeFX(keep.l + '-slot-' + keep.i);
+
+        starLevel++;
+    }
+}
+
+function allowDrop(ev) { ev.preventDefault(); ev.currentTarget.classList.add('drag-over'); }
+function drag(ev, type, idx) {
+    if(GAME.inCombat) { ev.preventDefault(); return; }
+    ev.dataTransfer.setData('srcType', type);
+    ev.dataTransfer.setData('srcIndex', idx);
+    if(type === 'board' || type === 'bench') document.getElementById('sell-zone').classList.add('active');
+}
+
+function drop(ev, destType, destIdx) {
+    ev.preventDefault();
+    ev.currentTarget.classList.remove('drag-over');
+    if(GAME.inCombat) return;
+
+    let srcType = ev.dataTransfer.getData('srcType');
+    let srcIdx = parseInt(ev.dataTransfer.getData('srcIndex'));
+
+    if(srcType === 'item') {
+        let item = GAME.inventory[srcIdx];
+        if(!item) return;
+
+        if(destType === 'inventory-item') {
+            let destItem = GAME.inventory[destIdx];
+            if(srcIdx === destIdx || !destItem) return;
+            let combined = combineItems(item, destItem);
+            if(combined) {
+                let lo = Math.min(srcIdx, destIdx);
+                let hi = Math.max(srcIdx, destIdx);
+                GAME.inventory.splice(hi, 1);
+                GAME.inventory.splice(lo, 1);
+                GAME.inventory.push(combined);
+                showBigMsg('装备合成', combined.name, 1000);
+            }
+            updateUI();
+            return;
+        }
+
+        let unitArr = destType === 'board' ? GAME.board : (destType === 'bench' ? GAME.bench : null);
+        if(!unitArr) return;
+        let unit = unitArr[destIdx];
+        if(unit && unit.items.length < 3) {
+            unit.items.push(item);
+            GAME.inventory.splice(srcIdx, 1);
+            recalcItemBonus(unit);
+            updateUI();
+        }
+        return;
+    }
+
+    if(srcType === 'board' || srcType === 'bench') {
+        let srcArr = srcType === 'board' ? GAME.board : GAME.bench;
+        
+        if(destType === 'sell') {
+            let u = srcArr[srcIdx]; if(!u) return;
+            GAME.gold += Math.max(1, Math.floor(u.totalCost * 0.7));
+            if(u.items) u.items.forEach(it => GAME.inventory.push(it));
+            srcArr[srcIdx] = null;
+            updateUI();
+            return;
+        }
+
+        let destArr = destType === 'board' ? GAME.board : GAME.bench;
+        if(srcType === 'bench' && destType === 'board' && !destArr[destIdx]) {
+            if(GAME.board.filter(c => c).length >= getPlayerPopCap()) {
+                showBigMsg('人口已满', '提升等级', 800);
+                return;
+            }
+        }
+        let tmp = destArr[destIdx];
+        destArr[destIdx] = srcArr[srcIdx];
+        srcArr[srcIdx] = tmp;
+        updateUI();
+    }
+}
+
+function combineItems(a, b) {
+    if(a.type !== 'base' || b.type !== 'base') return null;
+    let k1 = a.id + '_' + b.id, k2 = b.id + '_' + a.id;
+    let r = RECIPES[k1] || RECIPES[k2];
+    return r ? { id: a.id + '+' + b.id, ...r, type: 'advanced' } : null;
+}
+
+function recalcItemBonus(unit) {
+    let b = { atk:0, ap:0, hp:0, armor:0, mr:0, as:0, crit:0, startMana:0 };
+    (unit.items || []).forEach(it => { Object.entries(it.stats || {}).forEach(([k,v]) => { b[k] = (b[k]||0) + v; }); });
+    unit.itemBonus = b;
+}
+
+function getSynergyCounts() {
+    let counts = {};
+    let seen = {};
+    GAME.board.forEach(p => {
+        if(!p) return;
+        getUnitTraits(p.template).forEach(k => {
+            let key = k + '_' + p.bId;
+            if(seen[key]) return;
+            seen[key] = true;
+            counts[k] = (counts[k] || 0) + 1;
+        });
+    });
+    return counts;
+}
+
+function getSynergyTier(key, count) {
+    let tier = 0;
+    (SYN_TIERS[key] || []).forEach((need, i) => { if(count >= need) tier = i + 1; });
+    return tier;
+}
+
+function getSynergyBonuses() {
+    let bonuses = { atkPct:0, hpPct:0, armor:0, mr:0, ap:0, as:0, crit:0, startMana:0, damageAmp:0, heal:0 };
+    let active = {};
+    Object.entries(getSynergyCounts()).forEach(([key, count]) => {
+        let tier = getSynergyTier(key, count);
+        if(!tier) return;
+        active[key] = tier;
+        if(key === 'fire') bonuses.atkPct += 0.12 * tier;
+        if(key === 'water') { bonuses.startMana += 12 * tier; bonuses.ap += 8 * tier; }
+        if(key === 'grass') bonuses.hpPct += 0.10 * tier;
+        if(key === 'electric') { bonuses.as += 0.12 * tier; bonuses.crit += 0.06 * tier; }
+        if(key === 'ghost') bonuses.crit += 0.10 * tier;
+        if(key === 'dragon') { bonuses.damageAmp += 0.08 * tier; bonuses.hpPct += 0.06 * tier; }
+        if(key === 'tank') { bonuses.armor += 18 * tier; bonuses.mr += 12 * tier; }
+        if(key === 'assassin') bonuses.crit += 0.12 * tier;
+        if(key === 'fighter') { bonuses.atkPct += 0.08 * tier; bonuses.hpPct += 0.08 * tier; }
+        if(key === 'marksman') bonuses.as += 0.16 * tier;
+        if(key === 'mage') bonuses.ap += 14 * tier;
+        if(key === 'support') { bonuses.heal += 16 * tier; bonuses.startMana += 8 * tier; }
+        if(key === 'psychic') { bonuses.ap += 12 * tier; bonuses.startMana += 10 * tier; }
+        if(key === 'fairy') { bonuses.heal += 14 * tier; bonuses.hpPct += 0.04 * tier; }
+        if(key === 'steel') { bonuses.armor += 14 * tier; bonuses.mr += 8 * tier; }
+        if(key === 'wind') bonuses.as += 0.10 * tier;
+        if(key === 'light') { bonuses.damageAmp += 0.05 * tier; bonuses.startMana += 6 * tier; }
+        if(key === 'shadow') bonuses.crit += 0.08 * tier;
+        if(key === 'summoner') { bonuses.hpPct += 0.06 * tier; bonuses.ap += 8 * tier; }
+        if(key === 'guardian') { bonuses.armor += 12 * tier; bonuses.hpPct += 0.05 * tier; }
+        if(key === 'dancer') { bonuses.as += 0.08 * tier; bonuses.crit += 0.05 * tier; }
+        if(key === 'ranger') { bonuses.as += 0.12 * tier; bonuses.damageAmp += 0.03 * tier; }
+    });
+    GAME.activeSynergies = active;
+    return bonuses;
+}
+
+function applyCombatStats(unit, bonuses = {}) {
+    let evo = unit.template.evos[unit.star];
+    let item = unit.itemBonus || {};
+    unit.bonusStats = bonuses;
+    unit.maxHp = Math.floor((evo.h + (item.hp || 0)) * (1 + (bonuses.hpPct || 0)));
+    unit.hp = unit.maxHp;
+    unit.atk = Math.floor((evo.a + (item.atk || 0)) * (1 + (bonuses.atkPct || 0)));
+    unit.ap = (item.ap || 0) + (bonuses.ap || 0);
+    unit.armor = 20 + (item.armor || 0) + (bonuses.armor || 0);
+    unit.mr = 20 + (item.mr || 0) + (bonuses.mr || 0);
+    unit.attackSpeed = 1 + (item.as || 0) + (bonuses.as || 0);
+    unit.crit = Math.min(0.75, (item.crit || 0) + (bonuses.crit || 0));
+    unit.damageAmp = bonuses.damageAmp || 0;
+    unit.teamHeal = bonuses.heal || 0;
+    unit.mana = Math.min(100, (item.startMana || 0) + (bonuses.startMana || 0));
+    unit.maxMana = 100;
+    unit.attackMeter = 0.65;
+}
+
+function toggleSpeed() {
+    let speeds = [1, 1.5, 2];
+    let cur = speeds.indexOf(GAME.speed);
+    GAME.speed = speeds[(cur+1) % speeds.length];
+    if(combatTimer) {
+        clearInterval(combatTimer);
+        combatTimer = setInterval(combatTick, 720 / GAME.speed);
+    }
+    updateUI();
+}
+
+function generateEnemyTeam() {
+    GAME.enemy.fill(null);
+    let stage = (GAME.stage - 1) * 5 + GAME.sub;
+    
+    let count = Math.min(7, 1 + Math.floor(stage / 3)); 
+    
+    let avgCost = Math.min(6, 1 + Math.floor(stage / 5));
+    
+    let star = stage >= 25 ? 2 : (stage >= 13 ? 1 : 0);
+    
+    let positions = [];
+    for(let i=0; i<17; i++) positions.push(i);
+    positions.sort(() => Math.random() - 0.5);
+    
+    for(let i=0; i<count; i++) {
+        let pool = CHAMP_POOL.filter(c => Math.abs(c.c - avgCost) <= 1);
+        let tpl = pool[Math.floor(Math.random() * pool.length)];
+        let evo = tpl.evos[star];
+        let pos = positions[i];
+        GAME.enemy[pos] = {
+            isEnemy: true, bId: tpl.bId, template: tpl, star: star,
+            name: evo.n, img: evo.i,
+            hp: evo.h * (0.82 + (GAME.stage - 1) * 0.035), 
+            maxHp: evo.h * (0.82 + (GAME.stage - 1) * 0.035),
+            atk: evo.a * (0.78 + (GAME.stage - 1) * 0.015),
+            armor: 14 + GAME.stage * 0.5, mr: 14 + GAME.stage * 0.5,
+            attackSpeed: 0.88, crit: 0.02, ap: 0, damageAmp: 0,
+            mana: 0, maxMana: 100, attackMeter: 0.5, items: [], itemBonus: {}
+        };
+    }
+}
+
+function startCombat() {
+    if(GAME.inCombat) return;
+    let curPop = GAME.board.filter(c => c).length;
+    if(curPop === 0) return;
+
+    GAME.inCombat = true;
+    combatTickCount = 0;
+    GAME.stats = {};
+    document.getElementById('round-timer-fill').style.width = '100%';
+    
+    let synergyBonuses = getSynergyBonuses();
+    GAME.board.forEach((c, i) => {
+        if(!c) return;
+        applyCombatStats(c, synergyBonuses);
+        GAME.stats[i] = { name: c.name, dmg: 0 };
+    });
+
+    generateEnemyTeam();
+    showBigMsg('ROUND START', `STAGE ${GAME.stage}-${GAME.sub}`, 650);
+    updateUI();
+    
+    combatTimer = setInterval(combatTick, 720 / GAME.speed);
+}
+
+function combatTick() {
+    combatTickCount++;
+    let pAlive = GAME.board.filter((c,i) => c && c.hp > 0).length;
+    let eAlive = GAME.enemy.filter((c,i) => c && c.hp > 0).length;
+
+    if(pAlive === 0 || eAlive === 0 || combatTickCount > 60) {
+        clearInterval(combatTimer); combatTimer = null;
+        GAME.inCombat = false;
+        setTimeout(() => endCombat(pAlive > 0 && eAlive === 0), 600);
+        return;
+    }
+
+    GAME.board.forEach((c, i) => {
+        if(!c || c.hp <= 0) return;
+        c.attackMeter = (c.attackMeter || 0) + (c.attackSpeed || 1);
+        let swings = 0;
+        while(c.attackMeter >= 1 && swings < 2) {
+            c.attackMeter -= 1;
+            executeAttack(i, GAME.board, GAME.enemy, false);
+            swings++;
+        }
+    });
+    GAME.enemy.forEach((c, i) => {
+        if(!c || c.hp <= 0) return;
+        c.attackMeter = (c.attackMeter || 0) + (c.attackSpeed || 1);
+        let swings = 0;
+        while(c.attackMeter >= 1 && swings < 2) {
+            c.attackMeter -= 1;
+            executeAttack(i, GAME.enemy, GAME.board, true);
+            swings++;
+        }
+    });
+    document.getElementById('round-timer-fill').style.width = Math.max(0, 100 - combatTickCount / 60 * 100) + '%';
+    
+    updateUI(); // 只渲染变化的状态
+}
+
+function executeAttack(idx, atts, defs, isEnemy) {
+    let attacker = atts[idx];
+    if(!attacker || attacker.hp <= 0) return;
+
+    let aliveDefs = [];
+    defs.forEach((c, i) => { if(c && c.hp > 0) aliveDefs.push({c, i}); });
+    if(aliveDefs.length === 0) return;
+
+    aliveDefs.sort((a,b) => a.c.hp - b.c.hp);
+    let target = aliveDefs[0];
+
+    let baseDmg = attacker.atk * (1 + (attacker.damageAmp || 0));
+    let isCrit = Math.random() < (attacker.crit || attacker.itemBonus?.crit || 0);
+    if(isCrit) baseDmg *= 1.5;
+    let armor = target.c.armor ?? (20 + (target.c.itemBonus?.armor || 0));
+    let mitigation = armor / (armor + 100);
+    let dmg = Math.floor(baseDmg * (1 - mitigation));
+    
+    target.c.hp -= dmg;
+    attacker.mana = Math.min(attacker.maxMana, (attacker.mana||0) + 18);
+
+    if(!isEnemy && GAME.stats[idx]) GAME.stats[idx].dmg += dmg;
+    if(attacker.mana >= attacker.maxMana) {
+        attacker.mana = 0;
+        castAbility(idx, attacker, target.i, defs, isEnemy);
+    }
+
+    let aSlot = document.getElementById(`${isEnemy?'enemy':'board'}-slot-${idx}`);
+    let tSlot = document.getElementById(`${isEnemy?'board':'enemy'}-slot-${target.i}`);
+    if(aSlot && tSlot) {
+        let aChamp = aSlot.querySelector('.champion');
+        if(aChamp) {
+            aChamp.classList.add('attacking');
+            aChamp.classList.toggle('attack-left', isEnemy);
+            aChamp.classList.toggle('attack-right', !isEnemy);
+            setTimeout(() => {
+                aChamp.classList.remove('attacking', 'attack-left', 'attack-right');
+            }, 320);
+        }
+        tSlot.classList.add('hit-flash');
+        setTimeout(() => tSlot.classList.remove('hit-flash'), 360);
+        let r1 = aSlot.getBoundingClientRect(), r2 = tSlot.getBoundingClientRect();
+        let p = document.createElement('div');
+        p.className = 'projectile';
+        let typeColor = `var(--${attacker.template.t})`;
+        p.style.setProperty('--proj-color', typeColor);
+        p.style.left = (r1.left + r1.width/2) + 'px';
+        p.style.top = (r1.top + r1.height/2) + 'px';
+        document.getElementById('fx-layer').appendChild(p);
+        setTimeout(() => {
+            p.style.left = (r2.left + r2.width/2) + 'px';
+            p.style.top = (r2.top + r2.height/2) + 'px';
+        }, 20);
+        setTimeout(() => {
+            let dt = document.createElement('div');
+            dt.className = 'dmg-text' + (isCrit ? ' crit' : '');
+            dt.textContent = (isCrit ? '💥' : '') + dmg;
+            dt.style.left = (r2.left + r2.width/2) + 'px';
+            dt.style.top = (r2.top + r2.height/3) + 'px';
+            document.getElementById('fx-layer').appendChild(dt);
+            setTimeout(() => dt.remove(), 1000);
+            p.remove();
+        }, 280 / GAME.speed);
+    }
+}
+
+function castAbility(idx, attacker, targetIdx, defs, isEnemy) {
+    let target = defs[targetIdx];
+    if(!target || target.hp <= 0) return;
+    let power = Math.floor(attacker.atk * 0.7 + (attacker.ap || 0) * 2.2 + 35 * (attacker.star + 1));
+    let isMage = attacker.template.cls === 'mage';
+    let isAssassin = attacker.template.cls === 'assassin';
+    let isTank = attacker.template.cls === 'tank';
+    let isSupport = attacker.template.cls === 'support';
+    let dmg = isTank ? Math.floor(power * 0.55) : power;
+    if(isMage) dmg = Math.floor(power * 1.25);
+    if(isAssassin && target.hp / target.maxHp < 0.45) dmg = Math.floor(power * 1.45);
+    target.hp -= dmg;
+    if(!isEnemy && GAME.stats[idx]) GAME.stats[idx].dmg += Math.max(0, dmg);
+    let casterSlot = document.getElementById(`${isEnemy ? 'enemy' : 'board'}-slot-${idx}`);
+    if(casterSlot) {
+        casterSlot.classList.add('casting');
+        setTimeout(() => casterSlot.classList.remove('casting'), 520);
+    }
+
+    let allies = isEnemy ? GAME.enemy : GAME.board;
+    if(isTank || isSupport || attacker.teamHeal) {
+        let heal = Math.floor((isSupport ? 80 : 35) + (attacker.ap || 0) + (attacker.teamHeal || 0));
+        let low = allies.filter(u => u && u.hp > 0).sort((a,b) => (a.hp/a.maxHp) - (b.hp/b.maxHp))[0];
+        if(low) low.hp = Math.min(low.maxHp, low.hp + heal);
+    }
+
+    floatText(`${isEnemy ? 'enemy' : 'board'}-slot-${idx}`, attacker.template.skill, 'skill-text');
+    floatText(`${isEnemy ? 'board' : 'enemy'}-slot-${targetIdx}`, dmg, 'dmg-text skill');
+}
+
+function floatText(slotId, text, className) {
+    let slot = document.getElementById(slotId);
+    let layer = document.getElementById('fx-layer');
+    if(!slot || !layer) return;
+    let r = slot.getBoundingClientRect();
+    let el = document.createElement('div');
+    el.className = className;
+    el.textContent = text;
+    el.style.left = (r.left + r.width / 2) + 'px';
+    el.style.top = (r.top + r.height / 3) + 'px';
+    layer.appendChild(el);
+    setTimeout(() => el.remove(), 1000);
+}
+
+function endCombat(win) {
+    let goldReward = 6;
+    let interest = Math.min(5, Math.floor(GAME.gold / 10));
+    let streakBonus = 0;
+
+    if(win) {
+        if(GAME.streak >= 0) GAME.streak++; else GAME.streak = 1;
+        if(GAME.streak >= 3) streakBonus = Math.min(3, Math.floor(GAME.streak / 2));
+        showBigMsg('VICTORY', `+${goldReward + 2 + interest + streakBonus} 💰`, 1500, 'victory');
+        GAME.gold += goldReward + 2 + interest + streakBonus; 
+    } else {
+        if(GAME.streak <= 0) GAME.streak--; else GAME.streak = -1;
+        if(GAME.streak <= -3) streakBonus = Math.min(3, Math.floor(-GAME.streak / 2));
+        let aliveEnemies = GAME.enemy.filter(c => c && c.hp > 0).length;
+        let damage = Math.max(2, aliveEnemies + GAME.stage);
+        GAME.hp -= damage;
+        showBigMsg('DEFEAT', `-${damage} HP`, 1500, 'defeat');
+        GAME.gold += goldReward + 1 + interest + streakBonus;
+    }
+
+    let pveRound = (GAME.sub === 1) || (GAME.stage === 1 && GAME.sub === 5);
+    if(win && (pveRound || Math.random() < 0.35)) {
+        let keys = Object.keys(BASE_ITEMS);
+        let it = BASE_ITEMS[keys[Math.floor(Math.random()*keys.length)]];
+        GAME.inventory.push({...it});
+    }
+
+    if(GAME.hp <= 0) {
+        showBigMsg('GAME OVER', `第 ${GAME.stage}-${GAME.sub} 阶段战败<br><button onclick="location.reload()" class="restart-btn">重新开始</button>`, 99999, 'defeat');
+        GAME.inCombat = true; 
+        return;
+    }
+
+    GAME.sub++;
+    if(GAME.sub > 5) { GAME.sub = 1; GAME.stage++; }
+
+    GAME.xp += 2;
+    while(GAME.level < 12 && GAME.xp >= XP_TABLE[GAME.level]) {
+        GAME.xp -= XP_TABLE[GAME.level];
+        GAME.level++;
+    }
+
+    GAME.enemy.fill(null);
+    GAME.board.forEach(c => { if(c) { c.hp = c.maxHp; c.mana = c.itemBonus.startMana || 0; }});
+    document.getElementById('fx-layer').innerHTML = '';
+    document.getElementById('round-timer-fill').style.width = '100%';
+
+    if(!GAME.shopLocked) rollShop(false);
+    updateUI();
+}
+
+function buyXP() {
+    if(GAME.gold < 3 || GAME.level >= 12 || GAME.inCombat) return;
+    GAME.gold -= 3;
+    GAME.xp += 4;
+    while(GAME.level < 12 && GAME.xp >= XP_TABLE[GAME.level]) {
+        GAME.xp -= XP_TABLE[GAME.level];
+        GAME.level++;
+        showBigMsg('LEVEL UP!', `Lv.${GAME.level}`, 800);
+    }
+    updateUI();
+}
+
+// 绑定被内联 HTML 直接调用的核心逻辑函数到 Window 对象
+window.buyXP = buyXP;
+window.rollShop = rollShop;
+window.startCombat = startCombat;
+window.toggleSpeed = toggleSpeed;
+window.toggleShopLock = toggleShopLock;
+window.buyChampion = buyChampion;
+window.drag = drag;
+window.drop = drop;
+window.allowDrop = allowDrop;
+
+// 监听拖拽状态清理
+document.addEventListener('dragleave', e => { if(e.target.classList) e.target.classList.remove('drag-over'); });
+document.addEventListener('dragend', () => {
+    document.getElementById('sell-zone').classList.remove('active');
+    document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+});
+
+// 初始化入口
+window.addEventListener('DOMContentLoaded', () => {
+    initPool();
+    initBoard();
+    rollShop(false);
+    GAME.inventory.push({...BASE_ITEMS.sword});
+    GAME.inventory.push({...BASE_ITEMS.tear});
+    GAME.inventory.push({...BASE_ITEMS.bow});
+    updateUI();
+});
+
+
+</script>
+</body>
+</html>
