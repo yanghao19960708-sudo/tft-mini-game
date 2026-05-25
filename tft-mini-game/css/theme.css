@@ -1,0 +1,47 @@
+﻿:root {
+    /* 二次元星空/全息UI主色调 */
+    --bg-deep: #0b0d17;
+    --bg-mid: #151828;
+    --bg-up: rgba(35, 40, 70, 0.7);
+    
+    /* 核心面板：高透明毛玻璃材质 */
+    --panel: rgba(20, 25, 45, 0.55);
+    --panel-light: rgba(45, 55, 90, 0.65);
+    --border-soft: rgba(255, 255, 255, 0.15);
+    --border-mid: rgba(255, 255, 255, 0.3);
+
+    /* 二次元高亮强调色 */
+    --gold: #f1c40f;
+    --gold-bright: #fff282;
+    --gold-deep: #d4ac0d;
+    --cyan: #00e5ff;
+    --cyan-deep: #008eb5;
+    --pink: #ff477e;      /* 新增：二次元标志性霓虹粉 */
+    --purple-light: #b388ff; /* 新增：柔和亮紫 */
+    
+    --red: #ff4d4f;
+    --green: #00e676;
+
+    --text: #ffffff;
+    --text-mid: #b2bec3;
+    --text-dim: #636e72;
+
+    /* 费用边框 (变得更亮更荧光) */
+    --c1: #a4b0be;
+    --c2: #2ed573;
+    --c3: #1e90ff;
+    --c4: #ff477e; /* 4费改为显眼的粉色 */
+    --c5: #ffa502;
+
+    /* 属性色 */
+    --fire: #ff6b81;
+    --water: #70a1ff;
+    --grass: #7bed9f;
+    --electric: #eccc68;
+    --ghost: #a55eea;
+    --dragon: #ffa502;
+    --fighting: #ff7f50;
+    --psychic: #ff9ff3;
+    --normal: #dfe4ea;
+    --ice: #7efff5;
+}

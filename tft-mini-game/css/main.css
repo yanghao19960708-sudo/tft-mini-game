@@ -1,0 +1,541 @@
+import { CHAMP_POOL, SHOP_ODDS, XP_TABLE, BASE_ITEMS, RECIPES, SYN_TIERS } from './data.js';
+import { GAME, initPool } from './state.js';
+import { initBoard, updateUI, showBigMsg, showMergeFX } from './ui.js';
+
+// 将 XP_TABLE 挂载到全局供 ui.js 读取
+window.XP_TABLE_REF = XP_TABLE;
+
+let combatTimer = null;
+let combatTickCount = 0;
+
+/**
+ * 从共享卡池中加权抽取特定费用的角色
+ */
+function pickFromPool(cost) {
+    let pool = CHAMP_POOL.filter(c => c.c === cost && GAME.pool[c.bId] > 0);
+    if(pool.length === 0) {
+        // 如果该费用的卡池抽空了，回退到任意有库存的卡池
+        pool = CHAMP_POOL.filter(c => GAME.pool[c.bId] > 0);
+        if(pool.length === 0) return null;
+    }
+    let total = pool.reduce((s,c) => s + GAME.pool[c.bId], 0);
+    let r = Math.random() * total;
+    for(let c of pool) {
+        r -= GAME.pool[c.bId];
+        if(r <= 0) return c;
+    }
+    return pool[0];
+}
+
+/**
+ * 重构序列（刷新卡池商店）
+ * @param {boolean} payCost 是否扣除刷新计算算力 (2CE)
+ */
+function rollShop(payCost) {
+    if(payCost) {
+        if(GAME.gold < 2 || GAME.inCombat) return;
+        GAME.gold -= 2;
+    }
+    GAME.shop = [];
+    let odds = SHOP_ODDS[Math.min(9, GAME.level)];
+    for(let i = 0; i < 5; i++) {
+        let r = Math.random() * 100;
+        let cost = 1, acc = 0;
+        for(let j = 0; j < 5; j++) {
+            acc += odds[j];
+            if(r <= acc) { cost = j + 1; break; }
+        }
+        
+        // 核心机制优化：高等级下概率保底（例如7级及以上时第三个槽位必然刷出5费极稀有代码）
+        if(i === 2 && GAME.level >= 7) {
+            cost = 5;
+        }
+
+        let pick = pickFromPool(cost);
+        GAME.shop.push(pick);
+    }
+    GAME.shopLocked = false;
+    updateUI();
+}
+
+/**
+ * 购买全息异化程序并注入备战席
+ */
+function buyChampion(idx) {
+    if(GAME.inCombat) return;
+    let t = GAME.shop[idx];
+    if(!t || GAME.gold < t.c) return;
+    
+    // 检索所有已有同名且等星级单位
+    let sameUnits = [];
+    GAME.board.forEach((c,i) => { if(c && c.bId === t.bId && c.star === 0) sameUnits.push({l:'board',i}); });
+    GAME.bench.forEach((c,i) => { if(c && c.bId === t.bId && c.star === 0) sameUnits.push({l:'bench',i}); });
+    let willMerge = sameUnits.length >= 2;
+
+    let bIdx = GAME.bench.findIndex(x => x === null);
+    if(bIdx === -1 && !willMerge) return;
+
+    GAME.gold -= t.c;
+    if(GAME.pool[t.bId] !== undefined) GAME.pool[t.bId]--;
+    GAME.shop[idx] = null;
+
+    let evo = t.evos[0];
+    let unit = {
+        bId: t.bId, template: t, star: 0,
+        name: evo.n, img: evo.i, hp: evo.h, maxHp: evo.h, atk: evo.a,
+        mana: 0, maxMana: 100, items: [], totalCost: t.c, itemBonus: {}
+    };
+
+    if(willMerge) {
+        if(bIdx !== -1) GAME.bench[bIdx] = unit;
+        else GAME.bench.push(unit); // 临时扩展合并
+    } else {
+        GAME.bench[bIdx] = unit;
+    }
+
+    checkMerge(t.bId);
+    
+    // 合成回收后若备战席溢出则裁剪回9格
+    while(GAME.bench.length > 9) {
+        let idx2 = GAME.bench.lastIndexOf(null);
+        if(idx2 >= 9) GAME.bench.splice(idx2, 1);
+        else break;
+    }
+    updateUI();
+}
+
+/**
+ * 检查并执行三合一升级（超频与神化回路）
+ */
+function checkMerge(bId) {
+    let starLevel = 0;
+    while(starLevel < 4) {
+        let found = [];
+        GAME.board.forEach((c,i) => { if(c && c.bId === bId && c.star === starLevel) found.push({l:'board',i}); });
+        GAME.bench.forEach((c,i) => { if(c && c.bId === bId && c.star === starLevel) found.push({l:'bench',i}); });
+        if(found.length < 3) break;
+
+        let keep = found[0];
+        let keepArr = keep.l === 'board' ? GAME.board : GAME.bench;
+        let keepUnit = keepArr[keep.i];
+        let allItems = [...(keepUnit.items || [])];
+        for(let j = 1; j < 3; j++) {
+            let f = found[j];
+            let arr = f.l === 'board' ? GAME.board : GAME.bench;
+            allItems = allItems.concat(arr[f.i].items || []);
+            arr[f.i] = null;
+        }
+        
+        keepUnit.star++;
+        let nextEvo = keepUnit.template.evos[keepUnit.star];
+        keepUnit.name = nextEvo.n;
+        keepUnit.img = nextEvo.i;
+        keepUnit.maxHp = nextEvo.h;
+        keepUnit.hp = nextEvo.h;
+        keepUnit.atk = nextEvo.a;
+        keepUnit.totalCost = keepUnit.totalCost * 3;
+        keepUnit.items = allItems.slice(0, 3);
+
+        if(allItems.length > 3) allItems.slice(3).forEach(it => GAME.inventory.push(it));
+        recalcItemBonus(keepUnit);
+        showMergeFX(keep.l + '-slot-' + keep.i);
+
+        starLevel++;
+    }
+}
+
+/**
+ * 拖拽交互限制与视觉样式激活
+ */
+function allowDrop(ev) { ev.preventDefault(); ev.currentTarget.classList.add('drag-over'); }
+
+function drag(ev, type, idx) {
+    if(GAME.inCombat) { ev.preventDefault(); return; }
+    ev.dataTransfer.setData('srcType', type);
+    ev.dataTransfer.setData('srcIndex', idx);
+    if(type === 'board' || type === 'bench') {
+        document.getElementById('sell-zone').classList.add('active');
+    }
+}
+
+function drop(ev, destType, destIdx) {
+    ev.preventDefault();
+    ev.currentTarget.classList.remove('drag-over');
+    if(GAME.inCombat) return;
+
+    let srcType = ev.dataTransfer.getData('srcType');
+    let srcIdx = parseInt(ev.dataTransfer.getData('srcIndex'));
+
+    // 装备模块拖拽逻辑
+    if(srcType === 'item') {
+        let item = GAME.inventory[srcIdx];
+        if(!item) return;
+
+        if(destType === 'inventory-item') {
+            let destItem = GAME.inventory[destIdx];
+            if(srcIdx === destIdx || !destItem) return;
+            let combined = combineItems(item, destItem);
+            if(combined) {
+                let lo = Math.min(srcIdx, destIdx);
+                let hi = Math.max(srcIdx, destIdx);
+                GAME.inventory.splice(hi, 1);
+                GAME.inventory.splice(lo, 1);
+                GAME.inventory.push(combined);
+                showBigMsg('外挂模组构筑', combined.name, 1000);
+            }
+            updateUI();
+            return;
+        }
+
+        let unitArr = destType === 'board' ? GAME.board : (destType === 'bench' ? GAME.bench : null);
+        if(!unitArr) return;
+        let unit = unitArr[destIdx];
+        if(unit && unit.items.length < 3) {
+            unit.items.push(item);
+            GAME.inventory.splice(srcIdx, 1);
+            recalcItemBonus(unit);
+            updateUI();
+        }
+        return;
+    }
+
+    // 异化程序实体更换位置/上阵/分解逻辑
+    if(srcType === 'board' || srcType === 'bench') {
+        let srcArr = srcType === 'board' ? GAME.board : GAME.bench;
+        
+        if(destType === 'sell') {
+            let u = srcArr[srcIdx]; if(!u) return;
+            GAME.gold += Math.max(1, Math.floor(u.totalCost * 0.7));
+            if(GAME.pool[u.bId] !== undefined) GAME.pool[u.bId] += Math.pow(3, u.star);
+            if(u.items) u.items.forEach(it => GAME.inventory.push(it));
+            srcArr[srcIdx] = null;
+            updateUI();
+            return;
+        }
+
+        let destArr = destType === 'board' ? GAME.board : GAME.bench;
+        if(srcType === 'bench' && destType === 'board' && !destArr[destIdx]) {
+            if(GAME.board.filter(c => c).length >= GAME.level) {
+                showBigMsg('带宽负载溢出', '请设法扩容带宽', 800);
+                return;
+            }
+        }
+        let tmp = destArr[destIdx];
+        destArr[destIdx] = srcArr[srcIdx];
+        srcArr[srcIdx] = tmp;
+        updateUI();
+    }
+}
+
+function combineItems(a, b) {
+    if(a.type !== 'base' || b.type !== 'base') return null;
+    let k1 = a.id + '_' + b.id, k2 = b.id + '_' + a.id;
+    let r = RECIPES[k1] || RECIPES[k2];
+    return r ? { id: a.id + '+' + b.id, ...r, type: 'advanced' } : null;
+}
+
+function recalcItemBonus(unit) {
+    let b = { atk:0, ap:0, hp:0, armor:0, mr:0, as:0, crit:0, startMana:0 };
+    (unit.items || []).forEach(it => { Object.entries(it.stats || {}).forEach(([k,v]) => { b[k] = (b[k]||0) + v; }); });
+    unit.itemBonus = b;
+}
+
+function toggleSpeed() {
+    let speeds = [1, 2, 3, 4];
+    let cur = speeds.indexOf(GAME.speed);
+    GAME.speed = speeds[(cur+1) % speeds.length];
+    if(combatTimer) {
+        clearInterval(combatTimer);
+        combatTimer = setInterval(combatTick, 600 / GAME.speed);
+    }
+    updateUI();
+}
+
+function toggleShopLock() {
+    GAME.shopLocked = !GAME.shopLocked;
+    updateUI();
+}
+
+/**
+ * 弱化版电脑人 AI 数据生成回路
+ */
+function generateEnemyTeam() {
+    GAME.enemy.fill(null);
+    let stage = (GAME.stage - 1) * 5 + GAME.sub;
+    
+    // 动态调整：弱化人机阵列增长规模与降维数值成长
+    let count = Math.min(9, 1 + Math.floor(stage / 2.5)); 
+    let avgCost = Math.min(5, 1 + Math.floor(stage / 4));
+    let star = stage >= 18 ? 2 : (stage >= 9 ? 1 : 0); // 延后敌方升星的回合
+    
+    let positions = [];
+    for(let i = 0; i < 13; i++) positions.push(i);
+    positions.sort(() => Math.random() - 0.5);
+    
+    for(let i = 0; i < count; i++) {
+        let pool = CHAMP_POOL.filter(c => Math.abs(c.c - avgCost) <= 1);
+        let tpl = pool[Math.floor(Math.random() * pool.length)];
+        let evo = tpl.evos[star];
+        let pos = positions[i];
+        GAME.enemy[pos] = {
+            isEnemy: true, bId: tpl.bId, template: tpl, star: star,
+            name: evo.n, img: evo.i,
+            hp: evo.h * (1 + (GAME.stage - 1) * 0.05), 
+            maxHp: evo.h * (1 + (GAME.stage - 1) * 0.05),
+            atk: evo.a * (1 + (GAME.stage - 1) * 0.02),
+            armor: 20 + GAME.stage, mr: 20 + GAME.stage,
+            attackSpeed: 1, crit: 0.05, ap: 0, damageAmp: 0,
+            mana: 0, maxMana: 100, attackMeter: 0.5, items: [], itemBonus: {}
+        };
+    }
+}
+
+/**
+ * 启动计算接战序列
+ */
+function startCombat() {
+    if(GAME.inCombat) return;
+    let curPop = GAME.board.filter(c => c).length;
+    if(curPop === 0) return;
+
+    GAME.inCombat = true;
+    combatTickCount = 0;
+    GAME.stats = {};
+    
+    GAME.board.forEach((c, i) => {
+        if(!c) return;
+        let evo = c.template.evos[c.star];
+        c.maxHp = evo.h + (c.itemBonus.hp || 0);
+        c.hp = c.maxHp;
+        c.atk = evo.a + (c.itemBonus.atk || 0);
+        c.mana = c.itemBonus.startMana || 0;
+        c.maxMana = 100;
+        GAME.stats[i] = { name: c.name, dmg: 0 };
+    });
+
+    generateEnemyTeam();
+    showBigMsg('SEQUENCE INITIATED', `回路接战 STAGE ${GAME.stage}-${GAME.sub}`, 1200);
+    updateUI();
+    
+    combatTimer = setInterval(combatTick, 600 / GAME.speed);
+}
+
+function combatTick() {
+    combatTickCount++;
+    let pAlive = GAME.board.filter((c,i) => c && c.hp > 0).length;
+    let eAlive = GAME.enemy.filter((c,i) => c && c.hp > 0).length;
+
+    if(pAlive === 0 || eAlive === 0 || combatTickCount > 60) {
+        clearInterval(combatTimer); combatTimer = null;
+        GAME.inCombat = false;
+        setTimeout(() => endCombat(pAlive > 0 && eAlive === 0), 600);
+        return;
+    }
+
+    GAME.board.forEach((c, i) => { if(c && c.hp > 0) executeAttack(i, GAME.board, GAME.enemy, false); });
+    GAME.enemy.forEach((c, i) => { if(c && c.hp > 0) executeAttack(i, GAME.enemy, GAME.board, true); });
+    
+    // 动态渲染战斗变化
+    window.renderUnitsRef ? window.renderUnitsRef() : null;
+}
+
+/**
+ * 执行数据指令攻击
+ */
+function executeAttack(idx, atts, defs, isEnemy) {
+    let attacker = atts[idx];
+    if(!attacker || attacker.hp <= 0) return;
+
+    // 高阶机制：法力充能判定，若充能回线满额则拦截普通攻击，激发特殊高维解码技能
+    if ((attacker.mana || 0) >= attacker.maxMana) {
+        attacker.mana = 0; // 重置能量
+        let aliveDefs = [];
+        defs.forEach((c, i) => { if(c && c.hp > 0) aliveDefs.push(i); });
+        if(aliveDefs.length > 0) {
+            let targetIdx = aliveDefs[Math.floor(Math.random() * aliveDefs.length)];
+            castAbility(idx, attacker, targetIdx, defs, isEnemy);
+            return;
+        }
+    }
+
+    let aliveDefs = [];
+    defs.forEach((c, i) => { if(c && c.hp > 0) aliveDefs.push({c, i}); });
+    if(aliveDefs.length === 0) return;
+
+    aliveDefs.sort((a,b) => a.c.hp - b.c.hp);
+    let target = aliveDefs[0];
+
+    let baseDmg = attacker.atk;
+    let isCrit = Math.random() < (attacker.itemBonus?.crit || 0);
+    if(isCrit) baseDmg *= 1.5;
+    let armor = 20 + (target.c.itemBonus?.armor || 0);
+    let mitigation = armor / (armor + 100);
+    let dmg = Math.floor(baseDmg * (1 - mitigation));
+    
+    target.c.hp -= dmg;
+    attacker.mana = Math.min(attacker.maxMana, (attacker.mana || 0) + 10);
+
+    if(!isEnemy && GAME.stats[idx]) GAME.stats[idx].dmg += dmg;
+
+    // 二次元全息动效触发与受击地格闪白注入
+    let aSlot = document.getElementById(`${isEnemy ? 'enemy' : 'board'}-slot-${idx}`);
+    let tSlot = document.getElementById(`${isEnemy ? 'board' : 'enemy'}-slot-${target.i}`);
+    if(aSlot && tSlot) {
+        let aChamp = aSlot.querySelector('.champion');
+        if(aChamp) {
+            aChamp.classList.add('attacking');
+            setTimeout(() => aChamp.classList.remove('attacking'), 300);
+        }
+        
+        // 受击方槽位增加闪白效果
+        tSlot.classList.add('hit-flash');
+        setTimeout(() => tSlot.classList.remove('hit-flash'), 340);
+
+        let r1 = aSlot.getBoundingClientRect(), r2 = tSlot.getBoundingClientRect();
+        let p = document.createElement('div');
+        p.className = 'projectile';
+        let typeColor = `var(--${attacker.template.t})`;
+        p.style.setProperty('--proj-color', typeColor);
+        p.style.left = (r1.left + r1.width/2) + 'px';
+        p.style.top = (r1.top + r1.height/2) + 'px';
+        document.getElementById('fx-layer').appendChild(p);
+        setTimeout(() => {
+            p.style.left = (r2.left + r2.width/2) + 'px';
+            p.style.top = (r2.top + r2.height/2) + 'px';
+        }, 20);
+        setTimeout(() => {
+            let dt = document.createElement('div');
+            dt.className = 'dmg-text' + (isCrit ? ' crit' : '');
+            dt.textContent = (isCrit ? '💥' : '') + dmg;
+            dt.style.left = (r2.left + r2.width/2) + 'px';
+            dt.style.top = (r2.top + r2.height/3) + 'px';
+            document.getElementById('fx-layer').appendChild(dt);
+            setTimeout(() => dt.remove(), 1000);
+            p.remove();
+        }, 250 / GAME.speed);
+    }
+}
+
+/**
+ * 释放特殊以太增幅回路大招
+ */
+function castAbility(idx, attacker, targetIdx, defs, isEnemy) {
+    let target = defs[targetIdx];
+    if(!target || target.hp <= 0) return;
+
+    // 触发施法者的六边形能量屏障展开与光环动效
+    let casterSlotEl = document.getElementById(`${isEnemy ? 'enemy' : 'board'}-slot-${idx}`);
+    if (casterSlotEl) {
+        casterSlotEl.classList.add('casting');
+        setTimeout(() => casterSlotEl.classList.remove('casting'), 550);
+    }
+
+    let power = Math.floor(attacker.atk * 0.7 + (attacker.ap || 0) * 2.2 + 35 * (attacker.star + 1));
+    target.hp -= power;
+    if(!isEnemy && GAME.stats[idx]) GAME.stats[idx].dmg += power;
+
+    let aSlot = document.getElementById(`${isEnemy ? 'enemy' : 'board'}-slot-${idx}`);
+    let tSlot = document.getElementById(`${isEnemy ? 'board' : 'enemy'}-slot-${targetIdx}`);
+    if(aSlot && tSlot) {
+        let r2 = tSlot.getBoundingClientRect();
+        let dt = document.createElement('div');
+        // 赋予机能风专属粉色重创震颤字体特效
+        dt.className = 'dmg-text skill'; 
+        dt.textContent = `⚡ ${attacker.template.skill} -${power}`;
+        dt.style.left = (r2.left + r2.width/2) + 'px';
+        dt.style.top = (r2.top + r2.height/3) + 'px';
+        document.getElementById('fx-layer').appendChild(dt);
+        setTimeout(() => dt.remove(), 1200);
+    }
+}
+
+function endCombat(win) {
+    let goldReward = 5;
+    let interest = Math.min(5, Math.floor(GAME.gold / 10));
+    let streakBonus = 0;
+
+    if(win) {
+        if(GAME.streak >= 0) GAME.streak++; else GAME.streak = 1;
+        if(GAME.streak >= 3) streakBonus = Math.min(3, Math.floor(GAME.streak / 2));
+        showBigMsg('SYNCED', `[序列同步成功] +${goldReward + 1 + interest + streakBonus} 算力`, 1500, 'victory');
+        GAME.gold += goldReward + 1 + interest + streakBonus; 
+    } else {
+        if(GAME.streak <= 0) GAME.streak--; else GAME.streak = -1;
+        if(GAME.streak <= -3) streakBonus = Math.min(3, Math.floor(-GAME.streak / 2));
+        let aliveEnemies = GAME.enemy.filter(c => c && c.hp > 0).length;
+        let damage = aliveEnemies * 2 + GAME.stage * 2;
+        GAME.hp -= damage;
+        showBigMsg('DISCONNECTED', `[遭遇数据反噬] -${damage} 心智稳态`, 1500, 'defeat');
+        GAME.gold += goldReward + interest + streakBonus;
+    }
+
+    let pveRound = (GAME.sub === 1) || (GAME.stage === 1 && GAME.sub === 5);
+    if(win && (pveRound || Math.random() < 0.15)) {
+        let keys = Object.keys(BASE_ITEMS);
+        let it = BASE_ITEMS[keys[Math.floor(Math.random() * keys.length)]];
+        GAME.inventory.push({...it});
+    }
+
+    if(GAME.hp <= 0) {
+        showBigMsg('SYSTEM CRASH', `心智内核已于第 ${GAME.stage}-${GAME.sub} 阶段崩溃战败<br><button onclick="location.reload()" class="restart-btn">重载核心 (RESTART)</button>`, 99999, 'defeat');
+        GAME.inCombat = true; 
+        return;
+    }
+
+    GAME.sub++;
+    if(GAME.sub > 5) { GAME.sub = 1; GAME.stage++; }
+
+    GAME.xp += 2;
+    while(GAME.level < 9 && GAME.xp >= XP_TABLE[GAME.level]) {
+        GAME.xp -= XP_TABLE[GAME.level];
+        GAME.level++;
+    }
+
+    GAME.enemy.fill(null);
+    GAME.board.forEach(c => { if(c) { c.hp = c.maxHp; c.mana = c.itemBonus.startMana || 0; }});
+    document.getElementById('fx-layer').innerHTML = '';
+    document.getElementById('round-timer-fill').style.width = '100%';
+
+    if(!GAME.shopLocked) rollShop(false);
+    updateUI();
+}
+
+function buyXP() {
+    if(GAME.gold < 3 || GAME.level >= 9 || GAME.inCombat) return;
+    GAME.gold -= 3; // 精调所需的带宽购买算力花费
+    GAME.xp += 4;
+    while(GAME.level < 9 && GAME.xp >= XP_TABLE[GAME.level]) {
+        GAME.xp -= XP_TABLE[GAME.level];
+        GAME.level++;
+        showBigMsg('BANDWIDTH EXPANDED', `权限升级 Lv.${GAME.level}`, 800);
+    }
+    updateUI();
+}
+
+// 绑定核心通信接口至全局 window 上
+window.buyXP = buyXP;
+window.rollShop = rollShop;
+window.startCombat = startCombat;
+window.toggleSpeed = toggleSpeed;
+window.toggleShopLock = toggleShopLock;
+window.buyChampion = buyChampion;
+window.drag = drag;
+window.drop = drop;
+window.allowDrop = allowDrop;
+
+// 移除残留的拖拽样式痕迹
+document.addEventListener('dragleave', e => { if(e.target.classList) e.target.classList.remove('drag-over'); });
+document.addEventListener('dragend', () => {
+    document.getElementById('sell-zone').classList.remove('active');
+    document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+});
+
+// 系统主进程初始化入口
+window.addEventListener('DOMContentLoaded', () => {
+    initPool();
+    initBoard();
+    rollShop(false);
+    GAME.inventory.push({...BASE_ITEMS.sword});
+    GAME.inventory.push({...BASE_ITEMS.tear});
+    updateUI();
+});
